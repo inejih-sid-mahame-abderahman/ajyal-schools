@@ -1,0 +1,493 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>منظومة استخراج بيانات الطلاب | وزارة التربية</title>
+    <!-- SheetJS -->
+    <script src="https://cdn.sheetjs.com/xlsx-0.20.2/package/dist/xlsx.full.min.js"></script>
+    <style>
+        * {
+            box-sizing: border-box;
+            font-family: 'Segoe UI', 'Tajawal', 'Cairo', system-ui, sans-serif;
+        }
+        body {
+            background: #eef2f7;
+            margin: 0;
+            padding: 30px 20px;
+            direction: rtl;
+        }
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        .header-card {
+            background: linear-gradient(135deg, #0b2b3b, #144d66);
+            border-radius: 36px;
+            padding: 24px 32px;
+            margin-bottom: 30px;
+            color: white;
+            box-shadow: 0 12px 24px rgba(0,0,0,0.1);
+        }
+        .header-card h1 {
+            margin: 0 0 8px 0;
+            font-size: 1.9rem;
+            font-weight: 600;
+        }
+        .header-card p {
+            margin: 0;
+            opacity: 0.85;
+            font-size: 0.95rem;
+        }
+        .upload-panel {
+            background: white;
+            border-radius: 32px;
+            padding: 24px 28px;
+            margin-bottom: 28px;
+            box-shadow: 0 6px 14px rgba(0,0,0,0.03);
+            border: 1px solid #daecf4;
+        }
+        .flex-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 25px;
+            align-items: flex-end;
+        }
+        .field-group {
+            flex: 1;
+            min-width: 240px;
+        }
+        .field-group label {
+            font-weight: 700;
+            display: block;
+            margin-bottom: 8px;
+            color: #1f5e7e;
+            font-size: 0.85rem;
+        }
+        input[type="file"] {
+            width: 100%;
+            padding: 10px 0;
+            font-size: 0.85rem;
+        }
+        input[type="text"] {
+            width: 100%;
+            padding: 10px 14px;
+            border-radius: 60px;
+            border: 1px solid #cbdde6;
+            font-size: 0.9rem;
+        }
+        .status-badge {
+            background: #eef2f8;
+            padding: 8px 16px;
+            border-radius: 40px;
+            font-size: 0.8rem;
+            margin-top: 12px;
+            color: #1f5e7e;
+        }
+        .btn-group {
+            margin-top: 22px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 16px;
+        }
+        .btn {
+            border: none;
+            padding: 10px 28px;
+            border-radius: 50px;
+            font-weight: 600;
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        .btn-primary {
+            background: #1a6d5e;
+            color: white;
+        }
+        .btn-primary:hover {
+            background: #0e5447;
+        }
+        .btn-success {
+            background: #2b7e4b;
+            color: white;
+        }
+        .btn-outline {
+            background: #f0f4f9;
+            border: 1px solid #c4d3df;
+            color: #1c5a74;
+        }
+        .stats-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            margin: 18px 0 20px;
+            background: #e4f0f7;
+            border-radius: 60px;
+            padding: 8px 20px;
+        }
+        .counter {
+            font-weight: 700;
+            background: white;
+            padding: 4px 16px;
+            border-radius: 30px;
+            color: #134b64;
+        }
+        .preview-table-wrapper {
+            background: white;
+            border-radius: 28px;
+            overflow-x: auto;
+            padding: 2px 0;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.8rem;
+        }
+        th {
+            background: #1f5775;
+            color: white;
+            padding: 14px 8px;
+            font-weight: 600;
+            white-space: nowrap;
+        }
+        td {
+            padding: 10px 8px;
+            border-bottom: 1px solid #e2edf2;
+        }
+        .empty-state {
+            padding: 50px;
+            text-align: center;
+            color: #6f9ab3;
+        }
+        footer {
+            text-align: center;
+            font-size: 0.7rem;
+            color: #6c8ea0;
+            margin-top: 35px;
+        }
+        .mapping-notice {
+            background: #fff1df;
+            border-radius: 24px;
+            padding: 10px 20px;
+            font-size: 0.75rem;
+            margin-top: 12px;
+            color: #996e2c;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="header-card">
+        <h1>📘 مستخرج بيانات الوزارة – التوحيد الدقيق</h1>
+        <p>استخراج تلقائي للأعمدة الأساسية: NNI ، RIM ، NOM (PRENOM_AR) ، NIVEAU ، ETABLISSEMENT (school_name)</p>
+    </div>
+
+    <div class="upload-panel">
+        <div class="flex-row">
+            <div class="field-group">
+                <label>📂 ملف الطلاب (Excel / XLSX)</label>
+                <input type="file" id="excelUploader" accept=".xlsx, .xls, .xlsm, .csv">
+                <div id="uploadStatus" class="status-badge">📁 لم يتم رفع أي ملف بعد</div>
+            </div>
+            <div class="field-group">
+                <label>🏫 اسم المؤسسة الافتراضي (ETABLISSEMENT)</label>
+                <input type="text" id="defaultEtabName" value="وزارة التربية - تيارت" placeholder="اسم المؤسسة">
+                <div class="mapping-notice">🔍 الخوارزمية تطابق الأعمدة: <strong>NNI ← عمود NNI</strong> | <strong>RIM ← عمود n_folder</strong> | <strong>NOM ← PRENOM_AR</strong> | <strong>NIVEAU ← NIVEAU</strong> | <strong>ETABLISSEMENT ← school_name (أو القيمة اليدوية)</strong></div>
+            </div>
+        </div>
+        <div class="btn-group">
+            <button id="extractBtn" class="btn btn-primary">🧹 استخراج الأعمدة وتنظيفها</button>
+            <button id="exportFinalBtn" class="btn btn-success">📎 تصدير الملف النظيف (Excel)</button>
+            <button id="resetAllBtn" class="btn btn-outline">🔄 إعادة تعيين</button>
+        </div>
+    </div>
+
+    <div class="stats-bar">
+        <span>📋 السجلات المستخرجة</span>
+        <span class="counter" id="recordCount">0</span>
+    </div>
+
+    <div class="preview-table-wrapper">
+        <div style="padding: 12px 20px 0 20px; font-weight: 600;">📌 عينة البيانات النظيفة (أول 100 صف)</div>
+        <div id="previewContainer">
+            <div class="empty-state">✨ انتظر رفع ملف Excel ثم اضغط "استخراج الأعمدة وتنظيفها"</div>
+        </div>
+    </div>
+    <footer>✔️ تعيين دقيق للأعمدة: NNI → NNI , RIM → n_folder , NOM → PRENOM_AR , NIVEAU → NIVEAU , ETABLISSEMENT → school_name. يتم تجاهل الصفوف الفارغة والرؤوس المعقدة تلقائياً. يمكنك تعديل اسم المؤسسة قبل التصدير.</footer>
+</div>
+
+<script>
+    // ---------- STATE ----------
+    let currentWorkbook = null;       // original workbook reference
+    let cleanedData = [];             // array of objects { NNI, RIM, NOM, NIVEAU, ETABLISSEMENT }
+    let currentFile = null;
+    
+    // Helper: Normalize string for exact matching (trim, lowercase, remove diacritics)
+    function normalizeString(str) {
+        if (str === undefined || str === null) return "";
+        return String(str).trim().toLowerCase()
+            .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+            .replace(/[_\-\s]/g, "");
+    }
+    
+    // Find first meaningful header row (avoid empty rows and merged titles)
+    function locateHeaderRow(sheetRows) {
+        if (!sheetRows || sheetRows.length === 0) return { startIdx: 0, headers: [] };
+        const targetKeywords = ["nni", "rim", "prenom", "niveau", "nom", "الاسم", "n_folder", "school_name"];
+        for (let i = 0; i < Math.min(sheetRows.length, 35); i++) {
+            const row = sheetRows[i];
+            if (!row || row.length === 0) continue;
+            let rowText = "";
+            for (let cell of row) {
+                if (cell && String(cell).trim() !== "") rowText += String(cell).trim() + " ";
+            }
+            const normText = normalizeString(rowText);
+            let matches = 0;
+            for (let kw of targetKeywords) {
+                if (normText.includes(kw)) matches++;
+            }
+            if (matches >= 2) {   // header row identified
+                const headers = row.map(cell => (cell === undefined || cell === null) ? "" : String(cell).trim());
+                return { startIdx: i, headers: headers };
+            }
+        }
+        // fallback: first non-empty row
+        for (let i = 0; i < Math.min(sheetRows.length, 15); i++) {
+            const row = sheetRows[i];
+            if (row && row.length > 0 && row.some(cell => cell !== undefined && cell !== null && String(cell).trim() !== "")) {
+                const headers = row.map(cell => (cell === undefined || cell === null) ? "" : String(cell).trim());
+                return { startIdx: i, headers: headers };
+            }
+        }
+        return { startIdx: 0, headers: [] };
+    }
+    
+    // Detect column index by exact name or includes logic for our specific mapping
+    function findColumnIndex(headers, targetNamesArray) {
+        for (let i = 0; i < headers.length; i++) {
+            const headerRaw = headers[i] !== undefined ? String(headers[i]).trim() : "";
+            const normHeader = normalizeString(headerRaw);
+            for (let target of targetNamesArray) {
+                const normTarget = normalizeString(target);
+                if (normHeader === normTarget) return i;
+                if (normHeader.includes(normTarget) && normTarget.length > 2) return i;
+                if (normTarget.includes(normHeader) && normHeader.length > 2) return i;
+            }
+        }
+        return -1;
+    }
+    
+    // Core extraction based on explicit mapping:
+    // NNI -> "NNI"
+    // RIM -> "n_folder"
+    // NOM -> "PRENOM_AR"   (primary) also fallback "NOM_AR" if needed
+    // NIVEAU -> "NIVEAU"
+    // ETABLISSEMENT -> "school_name" or manual default
+    function extractRequiredColumns(worksheet, defaultEtabName) {
+        // convert sheet to array of arrays
+        let dataRows = XLSX.utils.sheet_to_json(worksheet, { header: 1, defval: "" });
+        if (!dataRows || dataRows.length === 0) return [];
+        
+        const { startIdx, headers } = locateHeaderRow(dataRows);
+        if (headers.length === 0) return [];
+        
+        // specific mapping based on file "ministry records.xlsx" structure
+        let nniIdx = findColumnIndex(headers, ["NNI", "Nni", "nni"]);
+        let rimIdx = findColumnIndex(headers, ["n_folder", "n_folder", "NFOLDER", "N_FOLDER", "n folder"]);
+        let nomIdx = findColumnIndex(headers, ["PRENOM_AR", "Prenom_AR", "prenom_ar", "PRENOM AR", "الاسم الأول", "PRENOM"]);
+        // fallback for name if PRENOM_AR not found
+        if (nomIdx === -1) nomIdx = findColumnIndex(headers, ["NOM_AR", "Nom_AR", "الاسم الكامل", "NOM"]);
+        let niveauIdx = findColumnIndex(headers, ["NIVEAU", "Niveau", "niveau", "المستوى", "LEVEL"]);
+        let schoolIdx = findColumnIndex(headers, ["school_name", "school name", "SCHOOL_NAME", "المدرسة", "ETABLISSEMENT", "مؤسسة"]);
+        
+        // data rows after header
+        const dataChunk = dataRows.slice(startIdx + 1);
+        let records = [];
+        
+        for (let row of dataChunk) {
+            if (!row || row.length === 0) continue;
+            let hasContent = row.some(cell => cell !== undefined && cell !== null && String(cell).trim() !== "");
+            if (!hasContent) continue;
+            
+            let nni = (nniIdx !== -1 && row[nniIdx] !== undefined && row[nniIdx] !== null && String(row[nniIdx]).trim() !== "") 
+                ? String(row[nniIdx]).trim() : "";
+            let rim = (rimIdx !== -1 && row[rimIdx] !== undefined && row[rimIdx] !== null && String(row[rimIdx]).trim() !== "") 
+                ? String(row[rimIdx]).trim() : "";
+            let niveau = (niveauIdx !== -1 && row[niveauIdx] !== undefined && row[niveauIdx] !== null && String(row[niveauIdx]).trim() !== "") 
+                ? String(row[niveauIdx]).trim() : "";
+            
+            let nom = "";
+            if (nomIdx !== -1 && row[nomIdx] !== undefined && row[nomIdx] !== null && String(row[nomIdx]).trim() !== "") {
+                nom = String(row[nomIdx]).trim();
+            }
+            
+            // handle ETABLISSEMENT: prefer school_name column, else use default from user input
+            let etablissement = defaultEtabName;
+            if (schoolIdx !== -1 && row[schoolIdx] !== undefined && row[schoolIdx] !== null && String(row[schoolIdx]).trim() !== "") {
+                etablissement = String(row[schoolIdx]).trim();
+            }
+            
+            // skip row only if absolutely no identifier
+            if (nni === "" && rim === "" && nom === "") continue;
+            
+            records.push({
+                NNI: nni,
+                RIM: rim,
+                NOM: nom,
+                NIVEAU: niveau,
+                ETABLISSEMENT: etablissement
+            });
+        }
+        return records;
+    }
+    
+    // Load workbook from file
+    function loadExcelFile(file) {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const data = new Uint8Array(e.target.result);
+                try {
+                    const workbook = XLSX.read(data, { type: 'array', defval: "" });
+                    resolve(workbook);
+                } catch(err) {
+                    reject(err);
+                }
+            };
+            reader.onerror = (err) => reject(err);
+            reader.readAsArrayBuffer(file);
+        });
+    }
+    
+    // Render preview table
+    function renderPreview(recordsArray) {
+        const container = document.getElementById('previewContainer');
+        const counterSpan = document.getElementById('recordCount');
+        if (!recordsArray || recordsArray.length === 0) {
+            container.innerHTML = '<div class="empty-state">📭 لا توجد سجلات بعد التنظيف. تأكد من أن الملف يحتوي على أعمدة: NNI, n_folder, PRENOM_AR, NIVEAU, school_name</div>';
+            counterSpan.innerText = "0";
+            return;
+        }
+        counterSpan.innerText = recordsArray.length;
+        const previewRows = recordsArray.slice(0, 100);
+        let html = `<table><thead><tr><th>NNI</th><th>RIM (n_folder)</th><th>NOM (PRENOM_AR)</th><th>NIVEAU</th><th>ETABLISSEMENT (school_name)</th></tr></thead><tbody>`;
+        for (let rec of previewRows) {
+            html += `<tr>
+                        <td>${escapeHtml(rec.NNI)}</td>
+                        <td>${escapeHtml(rec.RIM)}</td>
+                        <td>${escapeHtml(rec.NOM)}</td>
+                        <td>${escapeHtml(rec.NIVEAU)}</td>
+                        <td>${escapeHtml(rec.ETABLISSEMENT)}</td>
+                     </tr>`;
+        }
+        if (recordsArray.length > 100) {
+            html += `<tr><td colspan="5" style="text-align:center; background:#fafcff;">… و ${recordsArray.length - 100} صف إضافي (تم عرض أول 100) </td></tr>`;
+        }
+        html += `</tbody></table>`;
+        container.innerHTML = html;
+    }
+    
+    function escapeHtml(str) {
+        if (str === undefined || str === null) return '—';
+        return String(str).replace(/[&<>]/g, function(m) {
+            if (m === '&') return '&amp;';
+            if (m === '<') return '&lt;';
+            if (m === '>') return '&gt;';
+            return m;
+        });
+    }
+    
+    // export cleaned data
+    function exportToExcel(cleanedArray, forcedEtabName) {
+        if (!cleanedArray || cleanedArray.length === 0) {
+            alert("⚠️ لا توجد بيانات نظيفة للتصدير. قم باستخراج البيانات أولاً.");
+            return false;
+        }
+        let exportData = cleanedArray.map(row => ({ ...row }));
+        if (forcedEtabName && forcedEtabName.trim() !== "") {
+            exportData = exportData.map(row => ({
+                ...row,
+                ETABLISSEMENT: forcedEtabName.trim()
+            }));
+        }
+        const worksheet = XLSX.utils.json_to_sheet(exportData);
+        const workbook = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(workbook, worksheet, "Students_Cleaned");
+        const fileName = `students_extracted_${new Date().toISOString().slice(0,19).replace(/:/g, '-')}.xlsx`;
+        XLSX.writeFile(workbook, fileName);
+        return true;
+    }
+    
+    // -------- DOM elements ----------
+    const fileInput = document.getElementById('excelUploader');
+    const extractBtn = document.getElementById('extractBtn');
+    const exportBtn = document.getElementById('exportFinalBtn');
+    const resetBtn = document.getElementById('resetAllBtn');
+    const etabInputField = document.getElementById('defaultEtabName');
+    const uploadStatusDiv = document.getElementById('uploadStatus');
+    
+    fileInput.addEventListener('change', (e) => {
+        if (e.target.files && e.target.files.length > 0) {
+            currentFile = e.target.files[0];
+            uploadStatusDiv.innerHTML = `✅ الملف محدد: ${currentFile.name} (${(currentFile.size/1024).toFixed(1)} كيلوبايت) <br> اضغط "استخراج الأعمدة" لمعالجة البيانات`;
+            cleanedData = [];
+            renderPreview([]);
+        } else {
+            currentFile = null;
+            uploadStatusDiv.innerHTML = `📁 لم يتم رفع ملف بعد`;
+            cleanedData = [];
+            renderPreview([]);
+        }
+    });
+    
+    extractBtn.addEventListener('click', async () => {
+        if (!currentFile) {
+            alert("❌ الرجاء اختيار ملف Excel أولاً.");
+            return;
+        }
+        const defaultEtab = etabInputField.value.trim() !== "" ? etabInputField.value.trim() : "مؤسسة التعليم - تيارت";
+        uploadStatusDiv.innerHTML = `⏳ جاري تحليل الملف واستخراج الأعمدة المطلوبة (NNI, n_folder, PRENOM_AR, NIVEAU, school_name) ...`;
+        try {
+            const workbook = await loadExcelFile(currentFile);
+            currentWorkbook = workbook;
+            const firstSheet = workbook.SheetNames[0];
+            const worksheet = workbook.Sheets[firstSheet];
+            // extract using explicit mapping
+            const extracted = extractRequiredColumns(worksheet, defaultEtab);
+            cleanedData = extracted;
+            renderPreview(cleanedData);
+            uploadStatusDiv.innerHTML = `✅ اكتمل الاستخراج! تم استرداد ${cleanedData.length} سجل. يمكنك الآن تصدير الملف النظيف.`;
+        } catch (err) {
+            console.error(err);
+            uploadStatusDiv.innerHTML = `❌ فشل المعالجة: ${err.message}`;
+            cleanedData = [];
+            renderPreview([]);
+        }
+    });
+    
+    exportBtn.addEventListener('click', () => {
+        if (!cleanedData || cleanedData.length === 0) {
+            alert("لا توجد بيانات مستخرجة. قم أولاً برفع ملف والضغط على استخراج الأعمدة.");
+            return;
+        }
+        const userEtab = etabInputField.value.trim();
+        let finalEtab = (userEtab !== "") ? userEtab : null;
+        exportToExcel(cleanedData, finalEtab);
+    });
+    
+    resetBtn.addEventListener('click', () => {
+        currentFile = null;
+        currentWorkbook = null;
+        cleanedData = [];
+        fileInput.value = '';
+        uploadStatusDiv.innerHTML = `📁 لم يتم رفع ملف بعد`;
+        renderPreview([]);
+        etabInputField.value = "وزارة التربية - تيارت";
+    });
+    
+    // initial empty state
+    renderPreview([]);
+</script>
+</body>
+</html>
