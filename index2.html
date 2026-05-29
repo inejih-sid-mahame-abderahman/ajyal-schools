@@ -3,8 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
-    <title>منظومة تنظيف بيانات الطلاب | توحيد الأعمدة NNI - RIM - NOM - NIVEAU - ETABLISSEMENT</title>
-    <!-- SheetJS for robust Excel parsing & writing -->
+    <title>منظومة تنظيف و توحيد ملفات الطلاب | دعم الملفات المعقدة</title>
+    <!-- SheetJS -->
     <script src="https://cdn.sheetjs.com/xlsx-0.20.2/package/dist/xlsx.full.min.js"></script>
     <style>
         * {
@@ -12,21 +12,17 @@
             font-family: 'Segoe UI', 'Tajawal', 'Cairo', system-ui, sans-serif;
         }
         body {
-            background: #f4f7fc;
+            background: #f0f4f8;
             margin: 0;
             padding: 24px 20px;
             direction: rtl;
         }
         .container {
-            max-width: 1300px;
+            max-width: 1400px;
             margin: 0 auto;
         }
-        /* header */
-        .hero {
-            margin-bottom: 28px;
-        }
         .hero h1 {
-            font-size: 1.9rem;
+            font-size: 1.8rem;
             color: #0a2f44;
             border-right: 6px solid #1e88e5;
             padding-right: 18px;
@@ -34,10 +30,8 @@
         }
         .hero p {
             color: #2c3e50;
-            margin-top: 8px;
             font-size: 0.9rem;
         }
-        /* card upload */
         .upload-area {
             background: white;
             border-radius: 32px;
@@ -65,9 +59,6 @@
         input[type="file"] {
             width: 100%;
             padding: 8px 0;
-            border: 1px solid #cbd5e1;
-            border-radius: 40px;
-            background: #fefefe;
         }
         .status-msg {
             font-size: 0.8rem;
@@ -76,6 +67,7 @@
             border-radius: 60px;
             background: #eef2f5;
             color: #2c3e50;
+            word-break: break-word;
         }
         .btn {
             background: #1e6f5c;
@@ -94,13 +86,9 @@
         }
         .btn-primary:hover {
             background: #0a3a48;
-            transform: scale(0.97);
         }
         .btn-success {
             background: #2c7a4d;
-        }
-        .btn-success:hover {
-            background: #1e5f3a;
         }
         .btn-outline {
             background: #e9ecef;
@@ -121,19 +109,21 @@
             padding: 6px 18px;
             font-weight: 500;
         }
+        .preview-section {
+            background: white;
+            border-radius: 28px;
+            overflow-x: auto;
+            margin-top: 20px;
+            padding: 4px 0;
+        }
         table {
             width: 100%;
             border-collapse: collapse;
-            background: white;
-            border-radius: 24px;
-            overflow: hidden;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
         }
         th {
             background: #1f4e6e;
             color: white;
             padding: 12px 10px;
-            font-weight: 600;
             font-size: 0.85rem;
             white-space: nowrap;
         }
@@ -141,13 +131,6 @@
             padding: 10px 8px;
             border-bottom: 1px solid #e2edf2;
             font-size: 0.8rem;
-        }
-        .preview-section {
-            background: white;
-            border-radius: 28px;
-            overflow-x: auto;
-            margin-top: 20px;
-            padding: 4px 0;
         }
         .empty-preview {
             padding: 35px;
@@ -166,27 +149,32 @@
             padding: 2px 8px;
             font-size: 0.7rem;
         }
+        .debug-info {
+            font-size: 0.7rem;
+            color: #6c757d;
+            margin-top: 5px;
+        }
     </style>
 </head>
 <body>
 <div class="container">
     <div class="hero">
         <h1>🧹 منظومة تنظيف و توحيد ملفات الطلاب</h1>
-        <p>رفع أي ملف إكسل (ministry, ajyal, تقارير مختلفة) ➜ استخراج الأعمدة الأساسية: <strong>NNI - RIM - NOM - NIVEAU - ETABLISSEMENT</strong><br>
-        إذا كان الملف لا يحتوي عمود ETABLISSEMENT، سيتم إضافته تلقائياً مع اسم المؤسسة التي تختارها (افتراضي: Ajyal El Moustaghbal). يمكنك تغيير الاسم قبل التصدير.</p>
+        <p>رفع أي ملف إكسل (وزارة، أجيال، تقارير مختلفة) ➜ استخراج الأعمدة الأساسية: <strong>NNI - RIM - NOM - NIVEAU - ETABLISSEMENT</strong><br>
+        يدعم الملفات ذات الرؤوس المعقدة (خلية متراكبة، صفوف فارغة في البداية). يتم التعرف على الأعمدة بأسماء مختلفة بالعربية أو الفرنسية.</p>
     </div>
 
     <div class="upload-area">
         <div class="flex-upload">
             <div class="file-card">
                 <label>📂 رفع ملف إكسل (XLSX / XLS)</label>
-                <input type="file" id="excelUpload" accept=".xlsx, .xls, .csv">
+                <input type="file" id="excelUpload" accept=".xlsx, .xls, .xlsm">
                 <div id="uploadStatus" class="status-msg">⚡ لم يتم رفع ملف بعد</div>
             </div>
             <div class="file-card">
                 <label>🏫 اسم المؤسسة (لإضافتها كعمود جديد)</label>
                 <input type="text" id="etabName" value="Ajyal El Moustaghbal" placeholder="Ajyal El Moustaghbal" style="width:100%; padding:8px 12px; border-radius: 40px; border:1px solid #ccc;">
-                <div style="font-size:0.7rem; margin-top:6px;">✏️ سيتم وضع هذا الاسم في عمود ETABLISSEMENT إذا كان مفقوداً</div>
+                <div style="font-size:0.7rem; margin-top:6px;">✏️ سيتم وضع هذا الاسم في عمود ETABLISSEMENT</div>
             </div>
         </div>
         <div style="margin-top: 20px;">
@@ -198,7 +186,7 @@
 
     <div class="action-bar">
         <div class="stats" id="statsDisplay">📊 السجلات المستخرجة: 0</div>
-        <div><span class="warning-badge">⚠️ يتم إعادة تسمية الأعمدة تلقائياً: NNI, RIM, NOM, NIVEAU, ETABLISSEMENT</span></div>
+        <div><span class="warning-badge">⚠️ يتم البحث التلقائي عن أعمدة: NNI, RIM, NOM, NIVEAU</span></div>
     </div>
 
     <div class="preview-section">
@@ -207,22 +195,66 @@
             <div class="empty-preview">✨ انتظر رفع ملف ثم الضغط على "تنظيف البيانات"</div>
         </div>
     </div>
-    <footer>الخوارزمية تبحث عن الأعمدة المشابهة (NNI, RIM, NOM, NIVEAU) حتى لو كانت مسميات مختلفة بالعربية أو الفرنسية. يتم إنشاء عمود ETABLISSEMENT إذا كان غير موجود، ويمكنك تعديل قيمته قبل التصدير.</footer>
+    <footer>الخوارزمية تتخطى الصفوف الفارغة والرؤوس المركبة. تبحث عن أعمدة NNI, RIM, NOM (الاسم بالفرنسية أو العربية), NIVEAU (الشعبة/المستوى), وتضيف ETABLISSEMENT تلقائياً.</footer>
 </div>
 
 <script>
     // --------------------- GLOBAL STATE -------------------------
-    let rawWorkbook = null;           // store original workbook object (to preserve data)
-    let cleanedRows = [];             // array of objects { NNI, RIM, NOM, NIVEAU, ETABLISSEMENT }
-    let originalSheetName = "";
+    let cleanedRows = [];      // array of objects { NNI, RIM, NOM, NIVEAU, ETABLISSEMENT }
+    let currentFile = null;
+    let rawWorkbook = null;
     
-    // Helper: normalize string for matching column names
+    // Helper: normalize string for column matching (remove accents, spaces, lowercase)
     function normalizeCol(str) {
         if (str === undefined || str === null) return "";
-        return String(str).trim().toLowerCase().replace(/[\s_\-]/g, '').normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+        return String(str).trim().toLowerCase()
+            .replace(/[\s_\-]/g, '')
+            .normalize("NFD").replace(/[\u0300-\u036f]/g, "");
     }
     
-    // detect column index based on multiple possible names (french/arabic/english)
+    // Detect real data start row (skip empty rows and header rows that are merged)
+    // Returns { startRowIndex, headersArray } where headersArray is the first meaningful header row
+    function findHeaderRow(dataRows) {
+        if (!dataRows || dataRows.length === 0) return { startRowIndex: 0, headers: [] };
+        
+        // Look for row containing keywords like NNI, RIM, الاسم, etc.
+        const keywords = ["nni", "rim", "الاسم", "nom", "prenom", "الشعبة", "niveau", "ميلاد", "date"];
+        
+        for (let i = 0; i < Math.min(dataRows.length, 30); i++) {
+            const row = dataRows[i];
+            if (!row || row.length === 0) continue;
+            
+            let rowStr = "";
+            for (let cell of row) {
+                if (cell !== undefined && cell !== null && String(cell).trim() !== "") {
+                    rowStr += String(cell).trim() + " ";
+                }
+            }
+            const normalizedRow = normalizeCol(rowStr);
+            
+            // Check if row contains at least 2 column keywords
+            let matchCount = 0;
+            for (let kw of keywords) {
+                if (normalizedRow.includes(kw)) matchCount++;
+            }
+            if (matchCount >= 2) {
+                // Found header row
+                const headers = row.map(cell => (cell === undefined || cell === null) ? "" : String(cell).trim());
+                return { startRowIndex: i, headers: headers };
+            }
+        }
+        // If no header found, assume first non-empty row is header
+        for (let i = 0; i < Math.min(dataRows.length, 10); i++) {
+            const row = dataRows[i];
+            if (row && row.length > 0 && row.some(cell => cell !== undefined && cell !== null && String(cell).trim() !== "")) {
+                const headers = row.map(cell => (cell === undefined || cell === null) ? "" : String(cell).trim());
+                return { startRowIndex: i, headers: headers };
+            }
+        }
+        return { startRowIndex: 0, headers: [] };
+    }
+    
+    // Detect column index using multiple possible names (Arabic, French, English)
     function detectColumnIndex(headers, possibleNames) {
         for (let i = 0; i < headers.length; i++) {
             let cellVal = headers[i] !== undefined ? String(headers[i]).trim() : "";
@@ -230,75 +262,111 @@
             for (let p of possibleNames) {
                 let normPattern = normalizeCol(p);
                 if (normCell === normPattern) return i;
-                // also contains keyword? but prefer exact after normalization
                 if (normCell.includes(normPattern) && normPattern.length > 2) return i;
+                // Also check if pattern contains normCell
+                if (normPattern.includes(normCell) && normCell.length > 2) return i;
             }
         }
         return -1;
     }
     
-    // smart extraction from any sheet (array of arrays)
+    // Smart extraction from any sheet with auto-skip of empty rows
     function extractCleanedDataFromSheet(worksheet, defaultEtabName) {
+        // Convert sheet to array of arrays
         let data = XLSX.utils.sheet_to_json(worksheet, { header: 1, defval: "" });
-        if (!data || data.length < 2) return [];
+        if (!data || data.length === 0) return [];
         
-        const headers = data[0].map(cell => (cell === undefined || cell === null) ? "" : String(cell).trim());
-        const rows = data.slice(1);
+        // Find header row
+        const { startRowIndex, headers } = findHeaderRow(data);
         
-        // --- keyword lists for each target column ---
-        const nniKeywords = ["nni", "رقم الوطني", "national_id", "الرقم الوطني", "nniالطالب"];
-        const rimKeywords = ["rim", "رقم التعريف", "الرقم المدرسي", "id scolaire", "matricule", "rimالطالب"];
-        const nomKeywords = ["nom", "الاسم", "الاسم الكامل", "fullname", "prenom et nom", "studentname", "الإسم بالفرنسية", "الاسم بالفرنسية", "nom_fr", "prenom_nom"];
-        const niveauKeywords = ["niveau", "المستوى", "level", "grade", "class", "الشعبة", "الصف", "classe"];
+        if (headers.length === 0) {
+            console.warn("No header row found");
+            return [];
+        }
         
-        // detect indexes
+        // Get data rows after header
+        const dataRows = data.slice(startRowIndex + 1);
+        
+        // Keywords for each target column
+        const nniKeywords = ["nni", "رقم الوطني", "national_id", "الرقم الوطني", "nniالطالب", "nni الطالب"];
+        const rimKeywords = ["rim", "رقم التعريف", "الرقم المدرسي", "id scolaire", "matricule", "rimالطالب", "رقم التعريف المدرسي", "rim"];
+        const nomKeywords = ["nom", "الاسم", "الاسم الكامل", "fullname", "prenom et nom", "studentname", 
+                            "الإسم بالفرنسية", "الاسم بالفرنسية", "nom_fr", "prenom_nom", "الإسم", "الاسم"];
+        const niveauKeywords = ["niveau", "المستوى", "level", "grade", "class", "الشعبة", "الصف", "classe", "الشعبة"];
+        
         let nniIdx = detectColumnIndex(headers, nniKeywords);
         let rimIdx = detectColumnIndex(headers, rimKeywords);
         let nomIdx = detectColumnIndex(headers, nomKeywords);
         let niveauIdx = detectColumnIndex(headers, niveauKeywords);
         
-        // fallback: if nom not found, try to combine PRENOM + NOM columns if exist (French often)
-        let prenomIdx = -1, patronymeIdx = -1, nomArIdx = -1;
+        // Fallback: try to find Arabic name column if nom not found
+        let arabicNameIdx = -1;
         if (nomIdx === -1) {
-            for (let i=0; i<headers.length; i++) {
+            for (let i = 0; i < headers.length; i++) {
                 let h = normalizeCol(headers[i]);
-                if (h.includes("prenom") || h === "firstname" || h.includes("الاسم")) prenomIdx = i;
-                if (h.includes("patronyme") || h.includes("nomdefamille") || h.includes("lastname") || h.includes("الكنية")) patronymeIdx = i;
-                if (h.includes("الاسمبالعربية") || h === "الاسم_بالعربية") nomArIdx = i;
+                if (h.includes("الاسم") && h.includes("بالعربية")) arabicNameIdx = i;
+                else if (h === "الاسم" || h === "الاسمبالعربية") arabicNameIdx = i;
+            }
+        }
+        
+        // Also try to find prenom + patronyme combination
+        let prenomIdx = -1, patronymeIdx = -1;
+        if (nomIdx === -1) {
+            for (let i = 0; i < headers.length; i++) {
+                let h = normalizeCol(headers[i]);
+                if (h.includes("prenom") || h.includes("firstname") || h === "الاسم") prenomIdx = i;
+                if (h.includes("patronyme") || h.includes("lastname") || h.includes("nom") || h.includes("الكنية")) patronymeIdx = i;
             }
         }
         
         let records = [];
-        for (let row of rows) {
+        
+        for (let row of dataRows) {
             if (!row || row.length === 0) continue;
-            // extract values
-            let nni = (nniIdx !== -1 && row[nniIdx] !== undefined && row[nniIdx] !== "") ? String(row[nniIdx]).trim() : "";
-            let rim = (rimIdx !== -1 && row[rimIdx] !== undefined && row[rimIdx] !== "") ? String(row[rimIdx]).trim() : "";
-            let niveau = (niveauIdx !== -1 && row[niveauIdx] !== undefined && row[niveauIdx] !== "") ? String(row[niveauIdx]).trim() : "";
-            let nom = "";
-            if (nomIdx !== -1 && row[nomIdx] !== undefined && row[nomIdx] !== "") {
-                nom = String(row[nomIdx]).trim();
-            } 
-            // try to combine prenom + patronyme if nom missing and we have both
-            else if (prenomIdx !== -1 && patronymeIdx !== -1) {
-                let pre = (row[prenomIdx] !== undefined && row[prenomIdx] !== "") ? String(row[prenomIdx]).trim() : "";
-                let pat = (row[patronymeIdx] !== undefined && row[patronymeIdx] !== "") ? String(row[patronymeIdx]).trim() : "";
-                if (pre || pat) nom = (pre + " " + pat).trim();
-            } 
-            else if (prenomIdx !== -1) {
-                nom = (row[prenomIdx] !== undefined) ? String(row[prenomIdx]).trim() : "";
+            
+            // Check if row is completely empty
+            let hasData = false;
+            for (let cell of row) {
+                if (cell !== undefined && cell !== null && String(cell).trim() !== "") {
+                    hasData = true;
+                    break;
+                }
             }
-            else if (nomArIdx !== -1) {
-                nom = (row[nomArIdx] !== undefined) ? String(row[nomArIdx]).trim() : "";
+            if (!hasData) continue;
+            
+            // Extract values
+            let nni = (nniIdx !== -1 && row[nniIdx] !== undefined && row[nniIdx] !== null && String(row[nniIdx]).trim() !== "") 
+                ? String(row[nniIdx]).trim() : "";
+            let rim = (rimIdx !== -1 && row[rimIdx] !== undefined && row[rimIdx] !== null && String(row[rimIdx]).trim() !== "") 
+                ? String(row[rimIdx]).trim() : "";
+            let niveau = (niveauIdx !== -1 && row[niveauIdx] !== undefined && row[niveauIdx] !== null && String(row[niveauIdx]).trim() !== "") 
+                ? String(row[niveauIdx]).trim() : "";
+            
+            // Extract NOM
+            let nom = "";
+            if (nomIdx !== -1 && row[nomIdx] !== undefined && row[nomIdx] !== null && String(row[nomIdx]).trim() !== "") {
+                nom = String(row[nomIdx]).trim();
+            }
+            else if (arabicNameIdx !== -1 && row[arabicNameIdx] !== undefined && row[arabicNameIdx] !== null && String(row[arabicNameIdx]).trim() !== "") {
+                nom = String(row[arabicNameIdx]).trim();
+            }
+            else if (prenomIdx !== -1 && patronymeIdx !== -1) {
+                let pre = (row[prenomIdx] !== undefined && row[prenomIdx] !== null) ? String(row[prenomIdx]).trim() : "";
+                let pat = (row[patronymeIdx] !== undefined && row[patronymeIdx] !== null) ? String(row[patronymeIdx]).trim() : "";
+                if (pre || pat) nom = (pre + " " + pat).trim();
+            }
+            else if (prenomIdx !== -1) {
+                nom = (row[prenomIdx] !== undefined && row[prenomIdx] !== null) ? String(row[prenomIdx]).trim() : "";
             }
             
-            // skip completely empty rows (no useful identifiers)
+            // Skip rows with no useful data
             if (nni === "" && rim === "" && nom === "") continue;
             
-            // assign ETABLISSEMENT: if file already has column named 'ETABLISSEMENT' or similar? we check header for etablissement keyword
+            // If NNI or RIM looks like a number but stored as string, keep as is
+            // Check for ETABLISSEMENT column in original file
             let etabValue = defaultEtabName;
-            let etabIdx = detectColumnIndex(headers, ["etablissement", "établissement", "مؤسسة", "school", "المدرسة", "academy"]);
-            if (etabIdx !== -1 && row[etabIdx] !== undefined && String(row[etabIdx]).trim() !== "") {
+            let etabIdx = detectColumnIndex(headers, ["etablissement", "établissement", "مؤسسة", "school", "المدرسة", "academy", "المؤسسة"]);
+            if (etabIdx !== -1 && row[etabIdx] !== undefined && row[etabIdx] !== null && String(row[etabIdx]).trim() !== "") {
                 etabValue = String(row[etabIdx]).trim();
             }
             
@@ -310,10 +378,11 @@
                 ETABLISSEMENT: etabValue
             });
         }
+        
         return records;
     }
     
-    // load workbook from file
+    // Load workbook from file
     function loadWorkbook(file) {
         return new Promise((resolve, reject) => {
             const reader = new FileReader();
@@ -331,19 +400,18 @@
         });
     }
     
-    // core cleaning function using current uploaded file and etab name
+    // Core cleaning function
     async function processCleaning(file, etabName) {
         if (!file) throw new Error("لم يتم اختيار ملف");
         const workbook = await loadWorkbook(file);
         rawWorkbook = workbook;
         const firstSheetName = workbook.SheetNames[0];
-        originalSheetName = firstSheetName;
         const worksheet = workbook.Sheets[firstSheetName];
         const cleanedArray = extractCleanedDataFromSheet(worksheet, etabName);
         return cleanedArray;
     }
     
-    // render preview table (first 100 rows)
+    // Render preview table
     function renderPreview(rowsArray) {
         const container = document.getElementById('cleanPreviewContainer');
         if (!rowsArray || rowsArray.length === 0) {
@@ -353,10 +421,7 @@
         }
         document.getElementById('statsDisplay').innerHTML = `📊 السجلات المستخرجة: ${rowsArray.length}`;
         const displayRows = rowsArray.slice(0, 100);
-        let html = `<table>
-            <thead>
-                <tr><th>NNI</th><th>RIM</th><th>NOM</th><th>NIVEAU</th><th>ETABLISSEMENT</th></tr>
-            </thead><tbody>`;
+        let html = `<table><thead><tr><th>NNI</th><th>RIM</th><th>NOM</th><th>NIVEAU</th><th>ETABLISSEMENT</th></tr></thead><tbody>`;
         for (let row of displayRows) {
             html += `<tr>
                         <td>${escapeHtml(row.NNI)}</td>
@@ -383,8 +448,8 @@
         });
     }
     
-    // export cleaned data to excel (full dataset)
-    function exportCleanedToExcel(cleanedData, originalFilename) {
+    // Export cleaned data to Excel
+    function exportCleanedToExcel(cleanedData) {
         if (!cleanedData || cleanedData.length === 0) {
             alert("لا توجد بيانات نظيفة للتصدير. قم بتحميل ملف وتنظيفه أولاً.");
             return;
@@ -392,7 +457,7 @@
         const exportSheet = XLSX.utils.json_to_sheet(cleanedData);
         const wb = XLSX.utils.book_new();
         XLSX.utils.book_append_sheet(wb, exportSheet, "Donnees_Nettoyees");
-        const fileName = `cleaned_students_${new Date().toISOString().slice(0,19)}.xlsx`;
+        const fileName = `cleaned_students_${new Date().toISOString().slice(0,19).replace(/:/g, '-')}.xlsx`;
         XLSX.writeFile(wb, fileName);
     }
     
@@ -404,13 +469,10 @@
     const resetBtn = document.getElementById('resetBtn');
     const etabInput = document.getElementById('etabName');
     
-    let currentFile = null;
-    
     fileInput.addEventListener('change', (e) => {
         if (e.target.files && e.target.files.length > 0) {
             currentFile = e.target.files[0];
             uploadStatusDiv.innerHTML = `✅ تم اختيار الملف: ${currentFile.name} (${(currentFile.size/1024).toFixed(1)} KB) <br> اضغط "تنظيف البيانات" للمعالجة.`;
-            // reset preview and cleaned data
             cleanedRows = [];
             renderPreview([]);
         } else {
@@ -428,13 +490,12 @@
         }
         const customEtab = etabInput.value.trim();
         const etabForProcess = customEtab !== "" ? customEtab : "Ajyal El Moustaghbal";
-        uploadStatusDiv.innerHTML = `⏳ جاري تحليل الملف واستخراج الأعمدة المطلوبة (NNI, RIM, NOM, NIVEAU, ETABLISSEMENT)...`;
+        uploadStatusDiv.innerHTML = `⏳ جاري تحليل الملف واستخراج الأعمدة المطلوبة...`;
         try {
             const result = await processCleaning(currentFile, etabForProcess);
             cleanedRows = result;
             renderPreview(cleanedRows);
             uploadStatusDiv.innerHTML = `✅ اكتمل التنظيف! تم استخراج ${cleanedRows.length} سجل. يمكنك تعديل اسم المؤسسة وتصدير البيانات النظيفة.`;
-            // If user wants to update ETABLISSEMENT after cleaning? we allow re-run with new etab name.
         } catch (err) {
             console.error(err);
             uploadStatusDiv.innerHTML = `❌ خطأ أثناء معالجة الملف: ${err.message}`;
@@ -448,22 +509,19 @@
             alert("لا يوجد بيانات نظيفة. قم أولاً برفع ملف والضغط على 'تنظيف البيانات'.");
             return;
         }
-        // optional: if user changed the ETABLISSEMENT name in input, we can update all rows before export
         const newEtabName = etabInput.value.trim();
         if (newEtabName !== "") {
-            // we replace ETABLISSEMENT values with the new given name for all rows (coherent)
             let modified = cleanedRows.map(row => ({
                 ...row,
                 ETABLISSEMENT: newEtabName
             }));
-            exportCleanedToExcel(modified, currentFile?.name);
+            exportCleanedToExcel(modified);
         } else {
-            exportCleanedToExcel(cleanedRows, currentFile?.name);
+            exportCleanedToExcel(cleanedRows);
         }
     });
     
     resetBtn.addEventListener('click', () => {
-        // full reset
         currentFile = null;
         fileInput.value = '';
         cleanedRows = [];
@@ -472,7 +530,6 @@
         etabInput.value = "Ajyal El Moustaghbal";
     });
     
-    // initial empty state
     renderPreview([]);
 </script>
 </body>
