@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
-    <title>التحقق من تسجيل الطلاب | مطابقة كاملة بين الوزارة وأجيال</title>
+    <title>مطابقة الطلاب | البحث عن المسجلين في أجيال من ملف الوزارة</title>
     <script src="https://cdn.sheetjs.com/xlsx-0.20.2/package/dist/xlsx.full.min.js"></script>
     <style>
         * {
@@ -111,7 +111,7 @@
             width: 100%;
             border-collapse: collapse;
             font-size: 0.85rem;
-            min-width: 800px;
+            min-width: 700px;
         }
         th {
             background-color: #1e3a5f;
@@ -140,23 +140,14 @@
             font-size: 0.75rem;
             color: #6c757d;
         }
-        .match-yes {
-            background-color: #22c55e;
-            color: white;
-            padding: 4px 12px;
-            border-radius: 20px;
+        .match-count {
+            background-color: #facc15;
+            color: #1e293b;
+            border-radius: 30px;
+            padding: 2px 10px;
             font-weight: bold;
+            font-size: 0.7rem;
             display: inline-block;
-            font-size: 0.75rem;
-        }
-        .match-no {
-            background-color: #ef4444;
-            color: white;
-            padding: 4px 12px;
-            border-radius: 20px;
-            font-weight: bold;
-            display: inline-block;
-            font-size: 0.75rem;
         }
         .multi-list {
             background: #f8fafc;
@@ -185,7 +176,7 @@
 </head>
 <body>
 <div class="container">
-    <h1>📋 مطابقة تسجيلات الطلاب<br><span style="font-size: 1rem;">عرض جميع سجلات الوزارة مع تحديد الموجودين في أجيال</span></h1>
+    <h1>📋 مطابقة تسجيلات الطلاب<br><span style="font-size: 1rem;">البحث عن سجلات الوزارة الموجودة في قوائم أجيال</span></h1>
 
     <div class="upload-panel">
         <div class="upload-card">
@@ -216,16 +207,15 @@
     </div>
 
     <div class="result-section">
-        <div style="padding: 12px 20px 0 20px; font-weight: 600;">📌 جميع سجلات الوزارة مع حالة التسجيل في أجيال</div>
+        <div style="padding: 12px 20px 0 20px; font-weight: 600;">📌 سجلات الوزارة التي تم العثور عليها في قوائم أجيال</div>
         <div id="resultsTableContainer">
-            <div class="empty-msg">⬅️ انتظر رفع ملف الوزارة وملف(ات) أجيال</div>
+            <div class="empty-msg">⬅️ انتظر رفع ملف الوزارة وملف(ات) أجيال ثم اضغط إجراء المطابقة</div>
         </div>
     </div>
-    <footer>يتم البحث بمطابقة: NNI | RIM | الإسم الكامل. يتم عرض جميع سجلات الوزارة مع عمود يوضح إذا كان الطالب مسجلاً في أجيال أم لا.</footer>
+    <footer>يتم البحث بمطابقة: NNI أو RIM بين ملف الوزارة وملفات أجيال. يتم عرض فقط سجلات الوزارة التي لها تطابق.</footer>
 </div>
 
 <script>
-    // Global state
     let ministryData = [];
     let ajyalData = [];
     let matchResults = [];
@@ -235,10 +225,10 @@
         return String(str).trim().replace(/\s+/g, ' ').toLowerCase();
     }
 
-    // Smart header detection
+    // Find header row in worksheet
     function findHeaderRow(dataRows) {
         if (!dataRows || dataRows.length === 0) return { startRowIndex: 0, headers: [] };
-        const keywords = ["nni", "rim", "الاسم", "nom", "prenom", "الشعبة", "niveau", "ميلاد"];
+        const keywords = ["nni", "rim", "الاسم", "nom", "prenom", "الشعبة", "niveau"];
         for (let i = 0; i < Math.min(dataRows.length, 30); i++) {
             const row = dataRows[i];
             if (!row || row.length === 0) continue;
@@ -281,6 +271,7 @@
         return -1;
     }
 
+    // Extract records from any sheet (for Ajyal files)
     function extractRecordsFromSheetSmart(worksheet) {
         let data = XLSX.utils.sheet_to_json(worksheet, { header: 1, defval: "" });
         if (!data || data.length === 0) return [];
@@ -292,21 +283,21 @@
         
         const nniKeywords = ["nni", "رقم الوطني", "الرقم الوطني"];
         const rimKeywords = ["rim", "رقم التعريف", "الرقم المدرسي", "رقم التعريف المدرسي"];
-        const nomKeywords = ["nom", "الاسم", "الإسم بالفرنسية", "الاسم بالفرنسية", "nom_fr", "fullname"];
-        const niveauKeywords = ["niveau", "المستوى", "الشعبة", "level"];
+        const nomKeywords = ["nom", "الاسم", "الإسم بالفرنسية", "الاسم بالفرنسية", "nom_fr", "fullname", "prenom"];
+        const niveauKeywords = ["niveau", "المستوى", "الشعبة", "level", "classe"];
         
         let nniIdx = detectColumnIndex(headers, nniKeywords);
         let rimIdx = detectColumnIndex(headers, rimKeywords);
         let nomIdx = detectColumnIndex(headers, nomKeywords);
         let niveauIdx = detectColumnIndex(headers, niveauKeywords);
         
-        // Try to find prenom/patronyme
+        // Try to find prenom + patronyme combination
         let prenomIdx = -1, patronymeIdx = -1;
         if (nomIdx === -1) {
             for (let i = 0; i < headers.length; i++) {
                 let h = normalizeStr(headers[i]);
                 if (h.includes("prenom")) prenomIdx = i;
-                if (h.includes("patronyme") || h.includes("nom")) patronymeIdx = i;
+                if (h.includes("patronyme") || h.includes("nom") || h.includes("lastname")) patronymeIdx = i;
             }
         }
         
@@ -323,12 +314,15 @@
             }
             if (!hasData) continue;
             
-            let nni = (nniIdx !== -1 && row[nniIdx] !== undefined && row[nniIdx] !== null) ? String(row[nniIdx]).trim() : "";
-            let rim = (rimIdx !== -1 && row[rimIdx] !== undefined && row[rimIdx] !== null) ? String(row[rimIdx]).trim() : "";
-            let niveau = (niveauIdx !== -1 && row[niveauIdx] !== undefined && row[niveauIdx] !== null) ? String(row[niveauIdx]).trim() : "";
+            let nni = (nniIdx !== -1 && row[nniIdx] !== undefined && row[nniIdx] !== null && String(row[nniIdx]).trim() !== "") 
+                ? String(row[nniIdx]).trim() : "";
+            let rim = (rimIdx !== -1 && row[rimIdx] !== undefined && row[rimIdx] !== null && String(row[rimIdx]).trim() !== "") 
+                ? String(row[rimIdx]).trim() : "";
+            let niveau = (niveauIdx !== -1 && row[niveauIdx] !== undefined && row[niveauIdx] !== null && String(row[niveauIdx]).trim() !== "") 
+                ? String(row[niveauIdx]).trim() : "";
             
             let nom = "";
-            if (nomIdx !== -1 && row[nomIdx] !== undefined && row[nomIdx] !== null) {
+            if (nomIdx !== -1 && row[nomIdx] !== undefined && row[nomIdx] !== null && String(row[nomIdx]).trim() !== "") {
                 nom = String(row[nomIdx]).trim();
             }
             else if (prenomIdx !== -1 && patronymeIdx !== -1) {
@@ -347,6 +341,7 @@
         return records;
     }
 
+    // Extract ministry records with proper column mapping
     function extractMinistryRecords(worksheet) {
         let data = XLSX.utils.sheet_to_json(worksheet, { defval: "", header: 1 });
         if (!data || data.length < 2) return [];
@@ -358,13 +353,13 @@
         let prenomIdx = -1, patronymeIdx = -1;
         
         headers.forEach((h, i) => {
-            let up = String(h).toUpperCase().replace(/\s/g, '');
-            if (up === 'NNI') nniIdx = i;
-            if (up === 'RIM') rimIdx = i;
-            if (up === 'NIVEAU') niveauIdx = i;
-            if (up === 'NOM_FR') nomIdx = i;
-            if (up === 'PRENOM_FR') prenomIdx = i;
-            if (up === 'PATRONYME_FR') patronymeIdx = i;
+            let hUpper = String(h).toUpperCase().replace(/\s/g, '');
+            if (hUpper === 'NNI') nniIdx = i;
+            if (hUpper === 'RIM') rimIdx = i;
+            if (hUpper === 'NIVEAU') niveauIdx = i;
+            if (hUpper === 'NOM_FR') nomIdx = i;
+            if (hUpper === 'PRENOM_FR') prenomIdx = i;
+            if (hUpper === 'PATRONYME_FR') patronymeIdx = i;
         });
         
         let records = [];
@@ -379,13 +374,13 @@
                 ? String(row[niveauIdx]).trim() : "";
             
             let nom = "";
-            if (nomIdx !== -1 && row[nomIdx] !== undefined && row[nomIdx] !== null) {
+            if (nomIdx !== -1 && row[nomIdx] !== undefined && row[nomIdx] !== null && String(row[nomIdx]).trim() !== "") {
                 nom = String(row[nomIdx]).trim();
             }
             else if (prenomIdx !== -1 && patronymeIdx !== -1) {
-                let p = (row[prenomIdx] !== undefined && row[prenomIdx] !== null) ? String(row[prenomIdx]).trim() : "";
+                let pre = (row[prenomIdx] !== undefined && row[prenomIdx] !== null) ? String(row[prenomIdx]).trim() : "";
                 let pat = (row[patronymeIdx] !== undefined && row[patronymeIdx] !== null) ? String(row[patronymeIdx]).trim() : "";
-                if (p || pat) nom = (p + " " + pat).trim();
+                if (pre || pat) nom = (pre + " " + pat).trim();
             }
             else if (prenomIdx !== -1) {
                 nom = (row[prenomIdx] !== undefined && row[prenomIdx] !== null) ? String(row[prenomIdx]).trim() : "";
@@ -458,79 +453,96 @@
         return allRecords;
     }
 
+    // Match ministry records against Ajyal records
     function performMatching() {
         if (!ministryData.length || !ajyalData.length) {
             alert("⚠️ من فضلك قم برفع ملف الوزارة وملف(ات) أجيال قبل المطابقة.");
             return [];
         }
         
-        // Create a Set for quick lookup using NNI, RIM, and NOM
-        let ajyalNniSet = new Set();
-        let ajyalRimSet = new Set();
-        let ajyalNomSet = new Set();
+        // Create lookup maps for Ajyal data
+        let ajyalNniMap = new Map();
+        let ajyalRimMap = new Map();
         
         for (let a of ajyalData) {
-            if (a.nni) ajyalNniSet.add(normalizeStr(a.nni));
-            if (a.rim) ajyalRimSet.add(normalizeStr(a.rim));
-            if (a.nom) ajyalNomSet.add(normalizeStr(a.nom));
+            if (a.nni) {
+                let normalized = normalizeStr(a.nni);
+                if (!ajyalNniMap.has(normalized)) ajyalNniMap.set(normalized, []);
+                ajyalNniMap.get(normalized).push(a);
+            }
+            if (a.rim) {
+                let normalized = normalizeStr(a.rim);
+                if (!ajyalRimMap.has(normalized)) ajyalRimMap.set(normalized, []);
+                ajyalRimMap.get(normalized).push(a);
+            }
         }
         
         let results = [];
+        
+        // Loop through each ministry record
         for (let m of ministryData) {
             let found = false;
-            let matchDetails = [];
+            let matchCount = 0;
+            let matchedBy = [];
             
-            if (m.nni && ajyalNniSet.has(normalizeStr(m.nni))) {
-                found = true;
-                matchDetails.push("NNI");
-            }
-            if (m.rim && ajyalRimSet.has(normalizeStr(m.rim))) {
-                found = true;
-                matchDetails.push("RIM");
-            }
-            if (m.nom && ajyalNomSet.has(normalizeStr(m.nom))) {
-                found = true;
-                matchDetails.push("الإسم");
+            // Check by NNI
+            if (m.nni) {
+                let normalizedNni = normalizeStr(m.nni);
+                if (ajyalNniMap.has(normalizedNni)) {
+                    found = true;
+                    matchCount += ajyalNniMap.get(normalizedNni).length;
+                    matchedBy.push("NNI");
+                }
             }
             
-            results.push({
-                nni: m.nni || '—',
-                rim: m.rim || '—',
-                nom: m.nom || '—',
-                niveau: m.niveau || '—',
-                found_in_ajyal: found,
-                match_details: matchDetails.join(' + ') || 'لا يوجد تطابق'
-            });
+            // Check by RIM (if not already found by NNI, but still count)
+            if (m.rim) {
+                let normalizedRim = normalizeStr(m.rim);
+                if (ajyalRimMap.has(normalizedRim)) {
+                    found = true;
+                    matchCount += ajyalRimMap.get(normalizedRim).length;
+                    matchedBy.push("RIM");
+                }
+            }
+            
+            // Only add to results if a match was found
+            if (found) {
+                results.push({
+                    nni: m.nni || '',
+                    rim: m.rim || '',
+                    nom: m.nom || '',
+                    niveau: m.niveau || '',
+                    matchCount: matchCount,
+                    matchedBy: matchedBy.join(' + ')
+                });
+            }
         }
         
+        // Sort by matchCount descending
+        results.sort((a, b) => b.matchCount - a.matchCount);
         return results;
     }
 
     function renderResultsTable(results) {
         const container = document.getElementById('resultsTableContainer');
         if (!results.length) {
-            container.innerHTML = '<div class="empty-msg">🔍 لا توجد بيانات. تأكد من رفع الملفين.</div>';
+            container.innerHTML = '<div class="empty-msg">🔍 لا توجد نتائج مطابقة. تأكد من رفع الملفين.</div>';
             return;
         }
         
-        let matchedCount = results.filter(r => r.found_in_ajyal === true).length;
-        
-        let html = `<div class="search-stats">📊 من ${results.length} سجل في الوزارة، <strong style="color:#16a34a;">${matchedCount} مسجل في أجيال</strong> و <strong style="color:#dc2626;">${results.length - matchedCount} غير مسجل</strong></div>`;
+        let html = `<div class="search-stats">📊 تم العثور على <strong style="color:#16a34a;">${results.length} سجل</strong> من الوزارة مسجلين في قوائم أجيال</div>`;
         html += `<table><thead><tr>
-            <th>NNI</th><th>RIM</th><th>الاسم الكامل (Nom)</th><th>المستوى (Niveau)</th><th>الحالة في أجيال</th><th>تفاصيل التطابق</th>
+            <th>NNI</th><th>RIM</th><th>الاسم الكامل (Nom)</th><th>المستوى (Niveau)</th><th>عدد مرات التطابق</th><th>تم التطابق عبر</th>
         </tr></thead><tbody>`;
         
         for (let rec of results) {
-            let statusHtml = rec.found_in_ajyal 
-                ? '<span class="match-yes">✓ مسجل</span>' 
-                : '<span class="match-no">✗ غير مسجل</span>';
             html += `<tr>
                 <td>${escapeHtml(rec.nni)}</td>
                 <td>${escapeHtml(rec.rim)}</td>
                 <td>${escapeHtml(rec.nom)}</td>
                 <td>${escapeHtml(rec.niveau)}</td>
-                <td style="text-align:center">${statusHtml}</td>
-                <td style="font-size:0.75rem">${escapeHtml(rec.match_details)}</td>
+                <td style="text-align:center"><span class="match-count">${rec.matchCount}</span></td>
+                <td>${escapeHtml(rec.matchedBy)}</td>
             </tr>`;
         }
         html += `</tbody></table>`;
@@ -538,7 +550,7 @@
     }
 
     function escapeHtml(str) {
-        if (!str) return '—';
+        if (!str || str === '') return '—';
         return String(str).replace(/[&<>]/g, function(m) {
             if (m === '&') return '&amp;';
             if (m === '<') return '&lt;';
@@ -553,17 +565,17 @@
             return;
         }
         const exportData = results.map(r => ({
-            "NNI": r.nni,
-            "RIM": r.rim,
-            "Nom complet": r.nom,
-            "Niveau": r.niveau,
-            "مسجل في أجيال": r.found_in_ajyal ? "نعم" : "لا",
-            "تفاصيل التطابق": r.match_details
+            "NNI": r.nni || '',
+            "RIM": r.rim || '',
+            "Nom complet": r.nom || '',
+            "Niveau": r.niveau || '',
+            "Nombre de correspondances": r.matchCount,
+            "Correspondances via": r.matchedBy
         }));
         const ws = XLSX.utils.json_to_sheet(exportData);
         const wb = XLSX.utils.book_new();
-        XLSX.utils.book_append_sheet(wb, ws, "Matching_Results");
-        XLSX.writeFile(wb, `matching_complete_${new Date().toISOString().slice(0,19)}.xlsx`);
+        XLSX.utils.book_append_sheet(wb, ws, "Matched_Results");
+        XLSX.writeFile(wb, `matched_students_${new Date().toISOString().slice(0,19)}.xlsx`);
     }
 
     function updateCounters() {
