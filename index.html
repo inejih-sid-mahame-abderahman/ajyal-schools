@@ -135,7 +135,7 @@
             width: 100%;
             border-collapse: collapse;
             font-size: 0.8rem;
-            min-width: 800px;
+            min-width: 950px;
         }
         th {
             background: #215c72;
@@ -229,9 +229,9 @@
 
 <script>
     // ------------------- GLOBAL ------------------
-    let ministryRecords = [];       // array of { nni, rim, nom, niveau }
+    let ministryRecords = [];       // array of { nni, rim, nom, niveau, etablissement }
     let ajyalRecords = [];          // array of { nni, rim, nom, niveau }
-    let matchedResults = [];        // final results to display
+    let matchedResults = [];        // final results to display (includes ETABLISSEMENT from ministry)
 
     // Helper: Normalize (trim, lowercase, remove diacritics)
     function normalizeKey(str) {
@@ -244,7 +244,7 @@
     // --------------- find header row (generic) ----------
     function findHeaderRow(dataRows) {
         if (!dataRows || dataRows.length === 0) return { startRowIndex: 0, headers: [] };
-        const keywords = ["nni", "rim", "الاسم", "nom", "prenom", "الشعبة", "niveau", "الرقم", "التعريف"];
+        const keywords = ["nni", "rim", "الاسم", "nom", "prenom", "الشعبة", "niveau", "الرقم", "التعريف", "etablissement", "مؤسسة"];
         for (let i = 0; i < Math.min(dataRows.length, 35); i++) {
             const row = dataRows[i];
             if (!row || row.length === 0) continue;
@@ -284,7 +284,7 @@
         return -1;
     }
 
-    // -------- استخراج من ملف الوزارة (أعمدة محددة: NNI, RIM, NIVEAU, NOM_FR أو PRENOM + PATRONYME) ----------
+    // -------- استخراج من ملف الوزارة (أعمدة محددة: NNI, RIM, NIVEAU, NOM_FR أو PRENOM + PATRONYME, plus ETABLISSEMENT) ----------
     function extractMinistryData(worksheet) {
         let dataRows = XLSX.utils.sheet_to_json(worksheet, { header: 1, defval: "" });
         if (!dataRows || dataRows.length === 0) return [];
@@ -292,13 +292,15 @@
         const { startRowIndex, headers } = findHeaderRow(dataRows);
         if (headers.length === 0) return [];
 
-        // Mapping based on typical ministry columns: NNI, RIM, NIVEAU, PRENOM_FR + PATRONYME_FR / NOM_FR
+        // Mapping based on typical ministry columns: NNI, RIM, NIVEAU, PRENOM_FR + PATRONYME_FR / NOM_FR, and ETABLISSEMENT (school_name)
         let nniIdx = findColumnIndex(headers, ["NNI", "nni", "الرقم الوطني"]);
         let rimIdx = findColumnIndex(headers, ["RIM", "rim", "رقم التعريف المدرسي", "الرقم المدرسي"]);
         let niveauIdx = findColumnIndex(headers, ["NIVEAU", "niveau", "المستوى", "الشعبة"]);
         let nomFrIdx = findColumnIndex(headers, ["NOM_FR", "Nom_FR", "nom_fr", "الاسم بالفرنسية"]);
         let prenomIdx = findColumnIndex(headers, ["PRENOM_FR", "prenom_fr", "Prenom_FR", "الاسم الأول"]);
         let patronymeIdx = findColumnIndex(headers, ["PATRONYME_FR", "patronyme_fr", "Patronyme_FR", "الكنية"]);
+        // Etablissement column (school_name)
+        let etabIdx = findColumnIndex(headers, ["school_name", "SCHOOL_NAME", "ETABLISSEMENT", "مؤسسة", "المدرسة", "ETAB"]);
 
         const dataRowsAfter = dataRows.slice(startRowIndex + 1);
         let records = [];
@@ -311,6 +313,7 @@
             let nni = (nniIdx !== -1 && row[nniIdx] !== undefined && row[nniIdx] !== null && String(row[nniIdx]).trim() !== "") ? String(row[nniIdx]).trim() : "";
             let rim = (rimIdx !== -1 && row[rimIdx] !== undefined && row[rimIdx] !== null && String(row[rimIdx]).trim() !== "") ? String(row[rimIdx]).trim() : "";
             let niveau = (niveauIdx !== -1 && row[niveauIdx] !== undefined && row[niveauIdx] !== null && String(row[niveauIdx]).trim() !== "") ? String(row[niveauIdx]).trim() : "";
+            let etablissement = (etabIdx !== -1 && row[etabIdx] !== undefined && row[etabIdx] !== null && String(row[etabIdx]).trim() !== "") ? String(row[etabIdx]).trim() : "";
 
             let nom = "";
             if (nomFrIdx !== -1 && row[nomFrIdx] !== undefined && row[nomFrIdx] !== null && String(row[nomFrIdx]).trim() !== "") {
@@ -326,7 +329,7 @@
             }
 
             if (nni === "" && rim === "" && nom === "") continue;
-            records.push({ nni, rim, nom, niveau });
+            records.push({ nni, rim, nom, niveau, etablissement });
         }
 
         // fallback: if nothing found, try generic extraction (like Ajyal)
@@ -490,6 +493,7 @@
                     rim: m.rim || "",
                     nom: m.nom || "",
                     niveau: m.niveau || "",
+                    etablissement: m.etablissement || "(غير محدد)",
                     matchCount: matchCount,
                     matchedBy: matchedBy.join(" + ")
                 });
@@ -511,7 +515,7 @@
                         📊 تم العثور على <strong style="color:#1a7b6e;">${resultsArray.length} سجل</strong> من الوزارة مسجلين في قوائم أجيال
                     </div>`;
         html += `<table><thead>
-                    <th>NNI</th><th>RIM</th><th>الاسم الكامل (Nom)</th><th>المستوى / الشعبة</th><th>عدد التطابقات</th><th>تم التطابق عبر</th>
+                    <th>NNI</th><th>RIM</th><th>الاسم الكامل (Nom)</th><th>المستوى / الشعبة</th><th>المؤسسة (ETABLISSEMENT)</th><th>عدد التطابقات</th><th>تم التطابق عبر</th>
                  </thead><tbody>`;
         for (let r of resultsArray) {
             html += `<tr>
@@ -519,11 +523,12 @@
                         <td>${escapeHtml(r.rim)}</td>
                         <td>${escapeHtml(r.nom)}</td>
                         <td>${escapeHtml(r.niveau)}</td>
+                        <td>${escapeHtml(r.etablissement)}</td>
                         <td style="text-align:center"><span class="match-highlight">${r.matchCount}</span></td>
                         <td>${escapeHtml(r.matchedBy)}</td>
                      </tr>`;
         }
-        html += `</tbody></td>`;
+        html += `</tbody></table>`;
         container.innerHTML = html;
     }
 
@@ -548,6 +553,7 @@
             "RIM": r.rim,
             "Nom complet": r.nom,
             "Niveau": r.niveau,
+            "ETABLISSEMENT": r.etablissement,
             "Nombre de correspondances": r.matchCount,
             "Correspondances via": r.matchedBy
         }));
@@ -570,7 +576,7 @@
         try {
             const data = await loadFile(file, true);
             ministryRecords = data;
-            document.getElementById('ministryStatus').innerHTML = `✅ تم تحميل ${ministryRecords.length} سجل من الوزارة`;
+            document.getElementById('ministryStatus').innerHTML = `✅ تم تحميل ${ministryRecords.length} سجل من الوزارة (مع معلومات المؤسسة إن وجدت)`;
             updateCounters();
             matchedResults = [];
             renderResults([]);
