@@ -181,6 +181,10 @@
             padding: 2px 12px;
             font-size: 0.7rem;
         }
+        .warning-badge {
+            background: #fff3e0;
+            border-right: 3px solid #e6a017;
+        }
     </style>
 </head>
 <body>
@@ -233,18 +237,24 @@
     let ajyalRecords = [];          // array of { nni, rim, nom, niveau }
     let matchedResults = [];        // final results to display (includes ETABLISSEMENT from ministry)
 
-    // Helper: Normalize (trim, lowercase, remove diacritics)
+    // Helper: Normalize (trim, lowercase, remove diacritics, remove spaces/dashes/underscores)
     function normalizeKey(str) {
         if (str === undefined || str === null) return "";
         return String(str).trim().toLowerCase()
             .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
             .replace(/[_\-\s]/g, "");
     }
+    
+    // helper to clean text for display
+    function cleanText(t) {
+        if (t === undefined || t === null) return "";
+        return String(t).trim();
+    }
 
-    // --------------- find header row (generic) ----------
+    // --------------- enhanced header detection (robust) ----------
     function findHeaderRow(dataRows) {
         if (!dataRows || dataRows.length === 0) return { startRowIndex: 0, headers: [] };
-        const keywords = ["nni", "rim", "الاسم", "nom", "prenom", "الشعبة", "niveau", "الرقم", "التعريف", "etablissement", "مؤسسة"];
+        const keywords = ["nni", "rim", "الاسم", "nom", "prenom", "الشعبة", "niveau", "الرقم", "التعريف", "etablissement", "مؤسسة", "school", "rim", "الرقم الوطني", "الرقم المدرسي"];
         for (let i = 0; i < Math.min(dataRows.length, 35); i++) {
             const row = dataRows[i];
             if (!row || row.length === 0) continue;
@@ -260,6 +270,7 @@
                 return { startRowIndex: i, headers: headers };
             }
         }
+        // fallback: first non-empty row as header
         for (let i = 0; i < Math.min(dataRows.length, 12); i++) {
             const row = dataRows[i];
             if (row && row.length && row.some(cell => cell && String(cell).trim() !== "")) {
@@ -284,7 +295,7 @@
         return -1;
     }
 
-    // -------- استخراج من ملف الوزارة (أعمدة محددة: NNI, RIM, NIVEAU, NOM_FR أو PRENOM + PATRONYME, plus ETABLISSEMENT) ----------
+    // -------- استخراج متقدم من ملف الوزارة (يدعم أعمدة NNI, RIM, المستوى, الاسم, المؤسسة) ----------
     function extractMinistryData(worksheet) {
         let dataRows = XLSX.utils.sheet_to_json(worksheet, { header: 1, defval: "" });
         if (!dataRows || dataRows.length === 0) return [];
@@ -292,15 +303,17 @@
         const { startRowIndex, headers } = findHeaderRow(dataRows);
         if (headers.length === 0) return [];
 
-        // Mapping based on typical ministry columns: NNI, RIM, NIVEAU, PRENOM_FR + PATRONYME_FR / NOM_FR, and ETABLISSEMENT (school_name)
-        let nniIdx = findColumnIndex(headers, ["NNI", "nni", "الرقم الوطني"]);
-        let rimIdx = findColumnIndex(headers, ["RIM", "rim", "رقم التعريف المدرسي", "الرقم المدرسي"]);
-        let niveauIdx = findColumnIndex(headers, ["NIVEAU", "niveau", "المستوى", "الشعبة"]);
-        let nomFrIdx = findColumnIndex(headers, ["NOM_FR", "Nom_FR", "nom_fr", "الاسم بالفرنسية"]);
-        let prenomIdx = findColumnIndex(headers, ["PRENOM_FR", "prenom_fr", "Prenom_FR", "الاسم الأول"]);
-        let patronymeIdx = findColumnIndex(headers, ["PATRONYME_FR", "patronyme_fr", "Patronyme_FR", "الكنية"]);
-        // Etablissement column (school_name)
-        let etabIdx = findColumnIndex(headers, ["school_name", "SCHOOL_NAME", "ETABLISSEMENT", "مؤسسة", "المدرسة", "ETAB"]);
+        // أعمدة الوزارة المتوقعة
+        let nniIdx = findColumnIndex(headers, ["NNI", "nni", "الرقم الوطني", "الرقم الوطني الموحد"]);
+        let rimIdx = findColumnIndex(headers, ["RIM", "rim", "رقم التعريف المدرسي", "الرقم المدرسي", "الرمز المدرسي"]);
+        let niveauIdx = findColumnIndex(headers, ["NIVEAU", "niveau", "المستوى", "الشعبة", "الفرقة"]);
+        let nomFrIdx = findColumnIndex(headers, ["NOM_FR", "Nom_FR", "nom_fr", "الاسم بالفرنسية", "الاسم الكامل"]);
+        let prenomIdx = findColumnIndex(headers, ["PRENOM_FR", "prenom_fr", "Prenom_FR", "الاسم الأول", "الاسم الشخصي"]);
+        let patronymeIdx = findColumnIndex(headers, ["PATRONYME_FR", "patronyme_fr", "Patronyme_FR", "الكنية", "اسم العائلة"]);
+        let etabIdx = findColumnIndex(headers, ["school_name", "SCHOOL_NAME", "ETABLISSEMENT", "مؤسسة", "المدرسة", "ETAB", "établissement", "إقامة"]);
+        
+        // أعمدة إضافية للاسم العربي إن وجد
+        let nomArIdx = findColumnIndex(headers, ["الاسم بالعربية", "الاسم العربي", "الإسم"]);
 
         const dataRowsAfter = dataRows.slice(startRowIndex + 1);
         let records = [];
@@ -316,7 +329,11 @@
             let etablissement = (etabIdx !== -1 && row[etabIdx] !== undefined && row[etabIdx] !== null && String(row[etabIdx]).trim() !== "") ? String(row[etabIdx]).trim() : "";
 
             let nom = "";
-            if (nomFrIdx !== -1 && row[nomFrIdx] !== undefined && row[nomFrIdx] !== null && String(row[nomFrIdx]).trim() !== "") {
+            // أولوية للاسم العربي إن وجد
+            if (nomArIdx !== -1 && row[nomArIdx] !== undefined && row[nomArIdx] !== null && String(row[nomArIdx]).trim() !== "") {
+                nom = String(row[nomArIdx]).trim();
+            }
+            else if (nomFrIdx !== -1 && row[nomFrIdx] !== undefined && row[nomFrIdx] !== null && String(row[nomFrIdx]).trim() !== "") {
                 nom = String(row[nomFrIdx]).trim();
             }
             else if (prenomIdx !== -1 && patronymeIdx !== -1) {
@@ -332,14 +349,15 @@
             records.push({ nni, rim, nom, niveau, etablissement });
         }
 
-        // fallback: if nothing found, try generic extraction (like Ajyal)
+        // if still no records, try fallback generic extraction (treat as ajyal style but keep etablissement maybe missing)
         if (records.length === 0) {
-            return extractAjyalGeneric(worksheet);
+            let generic = extractAjyalGeneric(worksheet);
+            return generic.map(g => ({ ...g, etablissement: "" }));
         }
         return records;
     }
 
-    // استخراج من ملفات أجيال (مرن: أعمدة NNI, RIM, الاسم بالعربية, الشعبة)
+    // استخراج من ملفات أجيال (مرن جدًا: أعمدة NNI, RIM, الاسم, الشعبة)
     function extractAjyalGeneric(worksheet) {
         let dataRows = XLSX.utils.sheet_to_json(worksheet, { header: 1, defval: "" });
         if (!dataRows || dataRows.length === 0) return [];
@@ -347,18 +365,18 @@
         const { startRowIndex, headers } = findHeaderRow(dataRows);
         if (headers.length === 0) return [];
 
-        let nniIdx = findColumnIndex(headers, ["NNI", "nni", "الرقم الوطني"]);
-        let rimIdx = findColumnIndex(headers, ["رقم التعريف المدرسي RIM", "RIM", "rim", "رقم التعريف", "الرقم المدرسي"]);
-        let nomIdx = findColumnIndex(headers, ["الاسم بالعربية", "الاسم", "الإسم بالفرنسية", "الاسم الكامل"]);
-        let niveauIdx = findColumnIndex(headers, ["الشعبة", "نيفو", "niveau", "المستوى", "classe"]);
+        let nniIdx = findColumnIndex(headers, ["NNI", "nni", "الرقم الوطني", "الرقم الوطني الموحد"]);
+        let rimIdx = findColumnIndex(headers, ["رقم التعريف المدرسي RIM", "RIM", "rim", "رقم التعريف", "الرقم المدرسي", "الرمز المدرسي"]);
+        let nomIdx = findColumnIndex(headers, ["الاسم بالعربية", "الاسم", "الإسم بالفرنسية", "الاسم الكامل", "Nom", "الاسم الرباعي"]);
+        let niveauIdx = findColumnIndex(headers, ["الشعبة", "نيفو", "niveau", "المستوى", "classe", "الصف"]);
 
         // إذا لم نجد الاسم يمكن البحث عن prenom+patronyme
         let prenomAlt = -1, patronymeAlt = -1;
         if (nomIdx === -1) {
             for (let i = 0; i < headers.length; i++) {
                 let h = normalizeKey(headers[i]);
-                if (h.includes("prenom")) prenomAlt = i;
-                if (h.includes("patronyme") || h.includes("nom") || h.includes("lastname")) patronymeAlt = i;
+                if (h.includes("prenom") || h.includes("firstname")) prenomAlt = i;
+                if (h.includes("patronyme") || h.includes("nom") || h.includes("lastname") || h.includes("familyname")) patronymeAlt = i;
             }
         }
 
@@ -439,7 +457,7 @@
         return allRecords;
     }
 
-    // ------------- perform matching (based on NNI or RIM) --------------
+    // ------------- perform matching (strict NNI / RIM) --------------
     function performMatching() {
         if (!ministryRecords.length || !ajyalRecords.length) {
             alert("⚠️ يرجى رفع ملف الوزارة وملف(ات) أجيال أولاً.");
@@ -447,7 +465,7 @@
         }
 
         // Build lookup maps for Ajyal (normalized)
-        let nniMap = new Map();   // normalized NNI -> count and sample record
+        let nniMap = new Map();   // normalized NNI -> array of ajyal records (just for ref)
         let rimMap = new Map();
         
         for (let a of ajyalRecords) {
@@ -491,9 +509,9 @@
                 results.push({
                     nni: m.nni || "",
                     rim: m.rim || "",
-                    nom: m.nom || "",
-                    niveau: m.niveau || "",
-                    etablissement: m.etablissement || "(غير محدد)",
+                    nom: m.nom || "غير محدد",
+                    niveau: m.niveau || "—",
+                    etablissement: m.etablissement || "(غير محدد بالمؤسسة)",
                     matchCount: matchCount,
                     matchedBy: matchedBy.join(" + ")
                 });
@@ -504,23 +522,23 @@
         return results;
     }
 
-    // --------------- render results --------------
+    // --------------- render results with better formatting --------------
     function renderResults(resultsArray) {
         const container = document.getElementById('resultsContainer');
         if (!resultsArray.length) {
-            container.innerHTML = `<div class="empty-msg">🔍 لا توجد نتائج مطابقة. تأكد من رفع الملفين ووجود سجلات مشتركة.</div>`;
+            container.innerHTML = `<div class="empty-msg">🔍 لا توجد نتائج مطابقة. تأكد من رفع الملفين ووجود سجلات مشتركة (NNI / RIM).</div>`;
             return;
         }
         let html = `<div style="background:#eef3fa; padding:8px 16px; border-radius: 40px; margin: 12px 18px 0 18px;">
                         📊 تم العثور على <strong style="color:#1a7b6e;">${resultsArray.length} سجل</strong> من الوزارة مسجلين في قوائم أجيال
                     </div>`;
-        html += `<table><thead>
-                    <th>NNI</th><th>RIM</th><th>الاسم الكامل (Nom)</th><th>المستوى / الشعبة</th><th>المؤسسة (ETABLISSEMENT)</th><th>عدد التطابقات</th><th>تم التطابق عبر</th>
+        html += `<table style="margin-top: 16px;"><thead>
+                    <tr><th>NNI</th><th>RIM</th><th>الاسم الكامل (Nom)</th><th>المستوى / الشعبة</th><th>المؤسسة (ETABLISSEMENT)</th><th>عدد التطابقات</th><th>تم التطابق عبر</th></tr>
                  </thead><tbody>`;
         for (let r of resultsArray) {
             html += `<tr>
-                        <td>${escapeHtml(r.nni)}</td>
-                        <td>${escapeHtml(r.rim)}</td>
+                        <td>${escapeHtml(r.nni) || '—'}</td>
+                        <td>${escapeHtml(r.rim) || '—'}</td>
                         <td>${escapeHtml(r.nom)}</td>
                         <td>${escapeHtml(r.niveau)}</td>
                         <td>${escapeHtml(r.etablissement)}</td>
@@ -542,7 +560,7 @@
         });
     }
 
-    // --------------- export to excel ---------------
+    // --------------- export to excel (preserve arabic) ---------------
     function exportResultsToExcel(resultsArray) {
         if (!resultsArray.length) {
             alert("لا توجد نتائج لتصديرها");
@@ -551,11 +569,11 @@
         const exportData = resultsArray.map(r => ({
             "NNI": r.nni,
             "RIM": r.rim,
-            "Nom complet": r.nom,
-            "Niveau": r.niveau,
-            "ETABLISSEMENT": r.etablissement,
-            "Nombre de correspondances": r.matchCount,
-            "Correspondances via": r.matchedBy
+            "الاسم الكامل": r.nom,
+            "المستوى / الشعبة": r.niveau,
+            "المؤسسة (ETABLISSEMENT)": r.etablissement,
+            "عدد التطابقات": r.matchCount,
+            "التطابق عبر": r.matchedBy
         }));
         const ws = XLSX.utils.json_to_sheet(exportData);
         const wb = XLSX.utils.book_new();
@@ -582,7 +600,7 @@
             renderResults([]);
         } catch (err) {
             console.error(err);
-            document.getElementById('ministryStatus').innerHTML = "❌ خطأ في قراءة ملف الوزارة";
+            document.getElementById('ministryStatus').innerHTML = "❌ خطأ في قراءة ملف الوزارة، تأكد من الصيغة";
             ministryRecords = [];
             updateCounters();
             renderResults([]);
