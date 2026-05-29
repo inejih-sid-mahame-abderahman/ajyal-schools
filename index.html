@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ar" dir="rtl">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
-    <title>مطابقة الطلاب | البحث عن المسجلين في أجيال من ملف الوزارة</title>
+    <title>المطابقة الذكية | الطلاب المسجلين في أجيال من ملف الوزارة</title>
     <script src="https://cdn.sheetjs.com/xlsx-0.20.2/package/dist/xlsx.full.min.js"></script>
     <style>
         * {
@@ -11,246 +11,258 @@
             font-family: system-ui, 'Segoe UI', 'Tajawal', 'Cairo', sans-serif;
         }
         body {
-            background: #f0f2f5;
+            background: #f0f4f9;
             margin: 0;
-            padding: 20px;
+            padding: 24px 18px;
             direction: rtl;
         }
         .container {
             max-width: 1400px;
             margin: 0 auto;
         }
-        h1 {
-            font-size: 1.8rem;
-            color: #1e3a5f;
-            border-right: 6px solid #2c7da0;
-            padding-right: 18px;
-            margin-bottom: 20px;
+        .main-header {
+            background: linear-gradient(120deg, #0b2b3f, #1d5a6d);
+            border-radius: 32px;
+            padding: 18px 28px;
+            margin-bottom: 30px;
+            color: white;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.08);
         }
-        .upload-panel {
+        .main-header h1 {
+            margin: 0 0 6px 0;
+            font-size: 1.8rem;
+            font-weight: 600;
+        }
+        .main-header p {
+            margin: 0;
+            opacity: 0.85;
+            font-size: 0.9rem;
+        }
+        .upload-grid {
             display: flex;
             flex-wrap: wrap;
-            gap: 25px;
+            gap: 28px;
             margin-bottom: 35px;
         }
-        .upload-card {
+        .card {
             background: white;
-            border-radius: 24px;
-            box-shadow: 0 6px 14px rgba(0,0,0,0.05);
+            border-radius: 28px;
+            box-shadow: 0 8px 18px rgba(0,0,0,0.04);
             flex: 1;
             min-width: 280px;
-            padding: 18px 22px;
-            border: 1px solid #e2e8f0;
+            padding: 20px 24px;
+            border: 1px solid #e2edf2;
+            transition: 0.1s;
         }
-        .upload-card h3 {
+        .card h3 {
             margin-top: 0;
-            margin-bottom: 12px;
-            color: #0b3b5f;
+            margin-bottom: 14px;
+            color: #175d6b;
             display: flex;
             align-items: center;
             gap: 8px;
-        }
-        .badge {
-            background: #e9ecef;
-            padding: 4px 12px;
-            border-radius: 40px;
-            font-size: 0.75rem;
-            font-weight: normal;
-            color: #2c3e50;
+            font-size: 1.2rem;
         }
         .file-input {
-            margin: 15px 0;
             width: 100%;
+            margin: 12px 0;
+            padding: 6px 0;
         }
-        .status {
-            font-size: 0.85rem;
-            color: #2e7d64;
-            margin-top: 8px;
-            word-break: break-word;
+        .status-badge {
+            background: #eef2f7;
+            border-radius: 40px;
+            padding: 8px 14px;
+            font-size: 0.8rem;
+            color: #2c4e6e;
+            margin: 12px 0;
         }
         .btn {
-            background-color: #2c7da0;
             border: none;
-            color: white;
-            padding: 8px 18px;
-            border-radius: 40px;
+            border-radius: 60px;
+            padding: 8px 20px;
             font-weight: 500;
+            font-size: 0.8rem;
             cursor: pointer;
             transition: 0.15s;
-            font-size: 0.85rem;
-            margin-top: 8px;
+            margin-top: 6px;
+        }
+        .btn-primary {
+            background: #1b7b6e;
+            color: white;
+        }
+        .btn-primary:hover {
+            background: #0f5f54;
         }
         .btn-secondary {
-            background-color: #5f6c80;
+            background: #4b6b84;
+            color: white;
+        }
+        .btn-outline {
+            background: #eef2f9;
+            border: 1px solid #bfd4e0;
+            color: #2b5c6f;
         }
         .btn-success {
-            background-color: #2b9348;
-        }
-        .btn:hover {
-            transform: scale(0.97);
+            background: #2b7a4b;
+            color: white;
         }
         .stats-row {
-            background: #e9f0f5;
-            border-radius: 32px;
-            padding: 12px 20px;
-            margin-bottom: 25px;
+            background: #e4f0f5;
+            border-radius: 60px;
+            padding: 12px 24px;
             display: flex;
             flex-wrap: wrap;
             justify-content: space-between;
             align-items: center;
-            gap: 15px;
+            margin-bottom: 24px;
+            gap: 12px;
         }
-        .result-section {
+        .stats-numbers {
+            font-weight: 700;
+            background: white;
+            padding: 4px 16px;
+            border-radius: 40px;
+            color: #175d6b;
+        }
+        .result-card {
             background: white;
             border-radius: 28px;
-            box-shadow: 0 8px 20px rgba(0,0,0,0.05);
             overflow-x: auto;
+            box-shadow: 0 4px 14px rgba(0,0,0,0.03);
             padding: 4px 0;
         }
         table {
             width: 100%;
             border-collapse: collapse;
-            font-size: 0.85rem;
-            min-width: 700px;
+            font-size: 0.8rem;
+            min-width: 800px;
         }
         th {
-            background-color: #1e3a5f;
+            background: #215c72;
             color: white;
             padding: 14px 12px;
             font-weight: 600;
             white-space: nowrap;
         }
         td {
-            border-bottom: 1px solid #e2e8f0;
+            border-bottom: 1px solid #e6edf2;
             padding: 12px 10px;
-            vertical-align: top;
         }
         tr:hover td {
-            background-color: #f8fafc;
+            background: #fafeff;
         }
         .empty-msg {
+            padding: 50px 20px;
             text-align: center;
-            padding: 40px;
-            color: #6c757d;
-            font-style: italic;
+            color: #708c9e;
         }
-        footer {
-            margin-top: 35px;
-            text-align: center;
-            font-size: 0.75rem;
-            color: #6c757d;
-        }
-        .match-count {
-            background-color: #facc15;
-            color: #1e293b;
+        .match-highlight {
+            background: #fcf4d9;
             border-radius: 30px;
             padding: 2px 10px;
-            font-weight: bold;
+            font-weight: 600;
+            display: inline-block;
+        }
+        .footer-note {
+            text-align: center;
             font-size: 0.7rem;
-            display: inline-block;
+            color: #6c8ba0;
+            margin-top: 35px;
         }
-        .multi-list {
-            background: #f8fafc;
-            border-radius: 16px;
-            padding: 8px 12px;
-            margin-top: 12px;
-            font-size: 0.75rem;
-            max-height: 100px;
-            overflow-y: auto;
+        .file-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 10px;
         }
-        .multi-list span {
-            display: inline-block;
-            background: #e2e8f0;
-            padding: 2px 8px;
-            border-radius: 20px;
-            margin: 2px 4px;
-        }
-        .search-stats {
-            background: #f1f5f9;
-            padding: 10px 15px;
-            border-radius: 16px;
-            margin-bottom: 15px;
-            font-size: 0.9rem;
+        .file-tag {
+            background: #e9f0f5;
+            border-radius: 24px;
+            padding: 2px 12px;
+            font-size: 0.7rem;
         }
     </style>
 </head>
 <body>
 <div class="container">
-    <h1>📋 مطابقة تسجيلات الطلاب<br><span style="font-size: 1rem;">البحث عن سجلات الوزارة الموجودة في قوائم أجيال</span></h1>
+    <div class="main-header">
+        <h1>📌 مطابقة سجلات الوزارة مع قوائم أجيال المستقبل</h1>
+        <p>يكتشف الطلاب المسجلين في أجيال (Ajyal El Moustaghbal) من قاعدة بيانات الوزارة عبر NNI أو RIM</p>
+    </div>
 
-    <div class="upload-panel">
-        <div class="upload-card">
-            <h3>📁 1. سجل الوزارة</h3>
+    <div class="upload-grid">
+        <div class="card">
+            <h3>📂 ملف الوزارة الأساسي</h3>
             <input type="file" id="ministryFile" accept=".xlsx, .xls, .csv" class="file-input">
-            <div id="ministryStatus" class="status">⚠️ لم يتم رفع الملف بعد</div>
-            <button id="clearMinistryBtn" class="btn btn-secondary">🧹 تفريغ</button>
+            <div id="ministryStatus" class="status-badge">⚠️ لم يتم رفع ملف الوزارة بعد</div>
+            <button id="clearMinistryBtn" class="btn btn-outline">🧹 تفريغ</button>
         </div>
 
-        <div class="upload-card">
-            <h3>🏫 2. كشف أجيال المستقبل <span class="badge">يدعم عدة ملفات</span></h3>
-            <input type="file" id="ajyalFile" accept=".xlsx, .xls, .csv" multiple class="file-input">
-            <div id="ajyalStatus" class="status">⚠️ لم يتم رفع أي ملف بعد</div>
-            <div id="ajyalFileList" class="multi-list"></div>
-            <button id="clearAjyalBtn" class="btn btn-secondary">🧹 تفريغ جميع الملفات</button>
+        <div class="card">
+            <h3>🏫 قوائم أجيال (ملف أو عدة ملفات)</h3>
+            <input type="file" id="ajyalFilesInput" accept=".xlsx, .xls, .csv" multiple class="file-input">
+            <div id="ajyalStatus" class="status-badge">⚠️ لم يتم رفع أي ملف لأجيال</div>
+            <div id="ajyalFileList" class="file-list"></div>
+            <button id="clearAjyalBtn" class="btn btn-outline">🗑️ تفريغ الكل</button>
         </div>
     </div>
 
     <div class="stats-row">
-        <div><strong>📊 حالة البيانات</strong> : 
-            <span id="ministryCount">0</span> تسجيل (وزارة) &nbsp;|&nbsp;
-            <span id="ajyalCount">0</span> مسجل (أجيال)
+        <div><strong>📊 الإحصائيات:</strong> 
+            <span class="stats-numbers" id="ministryCount">0</span> سجل (وزارة) &nbsp;|&nbsp;
+            <span class="stats-numbers" id="ajyalCount">0</span> سجل (أجيال)
         </div>
-        <div>
-            <button id="runSearchBtn" class="btn" style="background-color:#2c7da0;">🔍 إجراء المطابقة</button>
-            <button id="exportBtn" class="btn btn-success">📎 تصدير النتائج (Excel)</button>
+        <div style="display: flex; gap: 10px;">
+            <button id="runMatchBtn" class="btn btn-primary">🔍 إجراء المطابقة</button>
+            <button id="exportMatchBtn" class="btn btn-success">📎 تصدير النتائج (Excel)</button>
         </div>
     </div>
 
-    <div class="result-section">
-        <div style="padding: 12px 20px 0 20px; font-weight: 600;">📌 سجلات الوزارة التي تم العثور عليها في قوائم أجيال</div>
-        <div id="resultsTableContainer">
-            <div class="empty-msg">⬅️ انتظر رفع ملف الوزارة وملف(ات) أجيال ثم اضغط إجراء المطابقة</div>
+    <div class="result-card">
+        <div style="padding: 14px 24px 0 24px; font-weight: 600; font-size: 1rem;">📌 سجلات الوزارة التي تم العثور عليها في قوائم أجيال</div>
+        <div id="resultsContainer">
+            <div class="empty-msg">✨ انتظر رفع ملف الوزارة وملف(ات) أجيال ثم اضغط "إجراء المطابقة"</div>
         </div>
     </div>
-    <footer>يتم البحث بمطابقة: NNI أو RIM بين ملف الوزارة وملفات أجيال. يتم عرض فقط سجلات الوزارة التي لها تطابق.</footer>
+    <div class="footer-note">🔎 تتم المطابقة عبر معيارين: NNI أو RIM. يظهر فقط طلاب الوزارة الذين لهم تطابق في قوائم أجيال.</div>
 </div>
 
 <script>
-    let ministryData = [];
-    let ajyalData = [];
-    let matchResults = [];
+    // ------------------- GLOBAL ------------------
+    let ministryRecords = [];       // array of { nni, rim, nom, niveau }
+    let ajyalRecords = [];          // array of { nni, rim, nom, niveau }
+    let matchedResults = [];        // final results to display
 
-    function normalizeStr(str) {
-        if (str === undefined || str === null) return '';
-        return String(str).trim().replace(/\s+/g, ' ').toLowerCase();
+    // Helper: Normalize (trim, lowercase, remove diacritics)
+    function normalizeKey(str) {
+        if (str === undefined || str === null) return "";
+        return String(str).trim().toLowerCase()
+            .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+            .replace(/[_\-\s]/g, "");
     }
 
-    // Find header row in worksheet
+    // --------------- find header row (generic) ----------
     function findHeaderRow(dataRows) {
         if (!dataRows || dataRows.length === 0) return { startRowIndex: 0, headers: [] };
-        const keywords = ["nni", "rim", "الاسم", "nom", "prenom", "الشعبة", "niveau"];
-        for (let i = 0; i < Math.min(dataRows.length, 30); i++) {
+        const keywords = ["nni", "rim", "الاسم", "nom", "prenom", "الشعبة", "niveau", "الرقم", "التعريف"];
+        for (let i = 0; i < Math.min(dataRows.length, 35); i++) {
             const row = dataRows[i];
             if (!row || row.length === 0) continue;
-            let rowStr = "";
+            let rowText = "";
             for (let cell of row) {
-                if (cell !== undefined && cell !== null && String(cell).trim() !== "") {
-                    rowStr += String(cell).trim() + " ";
-                }
+                if (cell && String(cell).trim() !== "") rowText += String(cell).trim() + " ";
             }
-            const normalizedRow = normalizeStr(rowStr);
-            let matchCount = 0;
-            for (let kw of keywords) {
-                if (normalizedRow.includes(kw)) matchCount++;
-            }
-            if (matchCount >= 2) {
+            const normRow = normalizeKey(rowText);
+            let matches = 0;
+            for (let kw of keywords) if (normRow.includes(kw)) matches++;
+            if (matches >= 2) {
                 const headers = row.map(cell => (cell === undefined || cell === null) ? "" : String(cell).trim());
                 return { startRowIndex: i, headers: headers };
             }
         }
-        for (let i = 0; i < Math.min(dataRows.length, 10); i++) {
+        for (let i = 0; i < Math.min(dataRows.length, 12); i++) {
             const row = dataRows[i];
-            if (row && row.length > 0 && row.some(cell => cell !== undefined && cell !== null && String(cell).trim() !== "")) {
+            if (row && row.length && row.some(cell => cell && String(cell).trim() !== "")) {
                 const headers = row.map(cell => (cell === undefined || cell === null) ? "" : String(cell).trim());
                 return { startRowIndex: i, headers: headers };
             }
@@ -258,299 +270,265 @@
         return { startRowIndex: 0, headers: [] };
     }
 
-    function detectColumnIndex(headers, possibleNames) {
+    function findColumnIndex(headers, possibleNames) {
         for (let i = 0; i < headers.length; i++) {
-            let cellVal = headers[i] !== undefined ? String(headers[i]).trim() : "";
-            let normCell = normalizeStr(cellVal);
+            let headerRaw = headers[i] !== undefined ? String(headers[i]).trim() : "";
+            let normHeader = normalizeKey(headerRaw);
             for (let p of possibleNames) {
-                let normPattern = normalizeStr(p);
-                if (normCell === normPattern) return i;
-                if (normCell.includes(normPattern) && normPattern.length > 2) return i;
+                let normPattern = normalizeKey(p);
+                if (normHeader === normPattern) return i;
+                if (normHeader.includes(normPattern) && normPattern.length > 2) return i;
+                if (normPattern.includes(normHeader) && normHeader.length > 2) return i;
             }
         }
         return -1;
     }
 
-    // Extract records from any sheet (for Ajyal files)
-    function extractRecordsFromSheetSmart(worksheet) {
-        let data = XLSX.utils.sheet_to_json(worksheet, { header: 1, defval: "" });
-        if (!data || data.length === 0) return [];
-        
-        const { startRowIndex, headers } = findHeaderRow(data);
+    // -------- استخراج من ملف الوزارة (أعمدة محددة: NNI, RIM, NIVEAU, NOM_FR أو PRENOM + PATRONYME) ----------
+    function extractMinistryData(worksheet) {
+        let dataRows = XLSX.utils.sheet_to_json(worksheet, { header: 1, defval: "" });
+        if (!dataRows || dataRows.length === 0) return [];
+
+        const { startRowIndex, headers } = findHeaderRow(dataRows);
         if (headers.length === 0) return [];
-        
-        const dataRows = data.slice(startRowIndex + 1);
-        
-        const nniKeywords = ["nni", "رقم الوطني", "الرقم الوطني"];
-        const rimKeywords = ["rim", "رقم التعريف", "الرقم المدرسي", "رقم التعريف المدرسي"];
-        const nomKeywords = ["nom", "الاسم", "الإسم بالفرنسية", "الاسم بالفرنسية", "nom_fr", "fullname", "prenom"];
-        const niveauKeywords = ["niveau", "المستوى", "الشعبة", "level", "classe"];
-        
-        let nniIdx = detectColumnIndex(headers, nniKeywords);
-        let rimIdx = detectColumnIndex(headers, rimKeywords);
-        let nomIdx = detectColumnIndex(headers, nomKeywords);
-        let niveauIdx = detectColumnIndex(headers, niveauKeywords);
-        
-        // Try to find prenom + patronyme combination
-        let prenomIdx = -1, patronymeIdx = -1;
+
+        // Mapping based on typical ministry columns: NNI, RIM, NIVEAU, PRENOM_FR + PATRONYME_FR / NOM_FR
+        let nniIdx = findColumnIndex(headers, ["NNI", "nni", "الرقم الوطني"]);
+        let rimIdx = findColumnIndex(headers, ["RIM", "rim", "رقم التعريف المدرسي", "الرقم المدرسي"]);
+        let niveauIdx = findColumnIndex(headers, ["NIVEAU", "niveau", "المستوى", "الشعبة"]);
+        let nomFrIdx = findColumnIndex(headers, ["NOM_FR", "Nom_FR", "nom_fr", "الاسم بالفرنسية"]);
+        let prenomIdx = findColumnIndex(headers, ["PRENOM_FR", "prenom_fr", "Prenom_FR", "الاسم الأول"]);
+        let patronymeIdx = findColumnIndex(headers, ["PATRONYME_FR", "patronyme_fr", "Patronyme_FR", "الكنية"]);
+
+        const dataRowsAfter = dataRows.slice(startRowIndex + 1);
+        let records = [];
+
+        for (let row of dataRowsAfter) {
+            if (!row || row.length === 0) continue;
+            let hasData = row.some(cell => cell !== undefined && cell !== null && String(cell).trim() !== "");
+            if (!hasData) continue;
+
+            let nni = (nniIdx !== -1 && row[nniIdx] !== undefined && row[nniIdx] !== null && String(row[nniIdx]).trim() !== "") ? String(row[nniIdx]).trim() : "";
+            let rim = (rimIdx !== -1 && row[rimIdx] !== undefined && row[rimIdx] !== null && String(row[rimIdx]).trim() !== "") ? String(row[rimIdx]).trim() : "";
+            let niveau = (niveauIdx !== -1 && row[niveauIdx] !== undefined && row[niveauIdx] !== null && String(row[niveauIdx]).trim() !== "") ? String(row[niveauIdx]).trim() : "";
+
+            let nom = "";
+            if (nomFrIdx !== -1 && row[nomFrIdx] !== undefined && row[nomFrIdx] !== null && String(row[nomFrIdx]).trim() !== "") {
+                nom = String(row[nomFrIdx]).trim();
+            }
+            else if (prenomIdx !== -1 && patronymeIdx !== -1) {
+                let pre = (row[prenomIdx] !== undefined && row[prenomIdx] !== null) ? String(row[prenomIdx]).trim() : "";
+                let pat = (row[patronymeIdx] !== undefined && row[patronymeIdx] !== null) ? String(row[patronymeIdx]).trim() : "";
+                if (pre || pat) nom = (pre + " " + pat).trim();
+            }
+            else if (prenomIdx !== -1) {
+                nom = (row[prenomIdx] !== undefined && row[prenomIdx] !== null) ? String(row[prenomIdx]).trim() : "";
+            }
+
+            if (nni === "" && rim === "" && nom === "") continue;
+            records.push({ nni, rim, nom, niveau });
+        }
+
+        // fallback: if nothing found, try generic extraction (like Ajyal)
+        if (records.length === 0) {
+            return extractAjyalGeneric(worksheet);
+        }
+        return records;
+    }
+
+    // استخراج من ملفات أجيال (مرن: أعمدة NNI, RIM, الاسم بالعربية, الشعبة)
+    function extractAjyalGeneric(worksheet) {
+        let dataRows = XLSX.utils.sheet_to_json(worksheet, { header: 1, defval: "" });
+        if (!dataRows || dataRows.length === 0) return [];
+
+        const { startRowIndex, headers } = findHeaderRow(dataRows);
+        if (headers.length === 0) return [];
+
+        let nniIdx = findColumnIndex(headers, ["NNI", "nni", "الرقم الوطني"]);
+        let rimIdx = findColumnIndex(headers, ["رقم التعريف المدرسي RIM", "RIM", "rim", "رقم التعريف", "الرقم المدرسي"]);
+        let nomIdx = findColumnIndex(headers, ["الاسم بالعربية", "الاسم", "الإسم بالفرنسية", "الاسم الكامل"]);
+        let niveauIdx = findColumnIndex(headers, ["الشعبة", "نيفو", "niveau", "المستوى", "classe"]);
+
+        // إذا لم نجد الاسم يمكن البحث عن prenom+patronyme
+        let prenomAlt = -1, patronymeAlt = -1;
         if (nomIdx === -1) {
             for (let i = 0; i < headers.length; i++) {
-                let h = normalizeStr(headers[i]);
-                if (h.includes("prenom")) prenomIdx = i;
-                if (h.includes("patronyme") || h.includes("nom") || h.includes("lastname")) patronymeIdx = i;
+                let h = normalizeKey(headers[i]);
+                if (h.includes("prenom")) prenomAlt = i;
+                if (h.includes("patronyme") || h.includes("nom") || h.includes("lastname")) patronymeAlt = i;
             }
         }
-        
+
+        const dataChunk = dataRows.slice(startRowIndex + 1);
         let records = [];
-        for (let row of dataRows) {
+
+        for (let row of dataChunk) {
             if (!row || row.length === 0) continue;
-            
-            let hasData = false;
-            for (let cell of row) {
-                if (cell !== undefined && cell !== null && String(cell).trim() !== "") {
-                    hasData = true;
-                    break;
-                }
-            }
+            let hasData = row.some(cell => cell !== undefined && cell !== null && String(cell).trim() !== "");
             if (!hasData) continue;
-            
-            let nni = (nniIdx !== -1 && row[nniIdx] !== undefined && row[nniIdx] !== null && String(row[nniIdx]).trim() !== "") 
-                ? String(row[nniIdx]).trim() : "";
-            let rim = (rimIdx !== -1 && row[rimIdx] !== undefined && row[rimIdx] !== null && String(row[rimIdx]).trim() !== "") 
-                ? String(row[rimIdx]).trim() : "";
-            let niveau = (niveauIdx !== -1 && row[niveauIdx] !== undefined && row[niveauIdx] !== null && String(row[niveauIdx]).trim() !== "") 
-                ? String(row[niveauIdx]).trim() : "";
-            
+
+            let nni = (nniIdx !== -1 && row[nniIdx] !== undefined && row[nniIdx] !== null && String(row[nniIdx]).trim() !== "") ? String(row[nniIdx]).trim() : "";
+            let rim = (rimIdx !== -1 && row[rimIdx] !== undefined && row[rimIdx] !== null && String(row[rimIdx]).trim() !== "") ? String(row[rimIdx]).trim() : "";
+            let niveau = (niveauIdx !== -1 && row[niveauIdx] !== undefined && row[niveauIdx] !== null && String(row[niveauIdx]).trim() !== "") ? String(row[niveauIdx]).trim() : "";
+
             let nom = "";
             if (nomIdx !== -1 && row[nomIdx] !== undefined && row[nomIdx] !== null && String(row[nomIdx]).trim() !== "") {
                 nom = String(row[nomIdx]).trim();
             }
-            else if (prenomIdx !== -1 && patronymeIdx !== -1) {
-                let pre = (row[prenomIdx] !== undefined && row[prenomIdx] !== null) ? String(row[prenomIdx]).trim() : "";
-                let pat = (row[patronymeIdx] !== undefined && row[patronymeIdx] !== null) ? String(row[patronymeIdx]).trim() : "";
+            else if (prenomAlt !== -1 && patronymeAlt !== -1) {
+                let pre = (row[prenomAlt] !== undefined && row[prenomAlt] !== null) ? String(row[prenomAlt]).trim() : "";
+                let pat = (row[patronymeAlt] !== undefined && row[patronymeAlt] !== null) ? String(row[patronymeAlt]).trim() : "";
                 if (pre || pat) nom = (pre + " " + pat).trim();
             }
-            else if (prenomIdx !== -1) {
-                nom = (row[prenomIdx] !== undefined && row[prenomIdx] !== null) ? String(row[prenomIdx]).trim() : "";
+            else if (prenomAlt !== -1) {
+                nom = (row[prenomAlt] !== undefined && row[prenomAlt] !== null) ? String(row[prenomAlt]).trim() : "";
             }
-            
+
             if (nni === "" && rim === "" && nom === "") continue;
-            
-            records.push({ nni, rim, niveau, nom });
+            records.push({ nni, rim, nom, niveau });
         }
         return records;
     }
 
-    // Extract ministry records with proper column mapping
-    function extractMinistryRecords(worksheet) {
-        let data = XLSX.utils.sheet_to_json(worksheet, { defval: "", header: 1 });
-        if (!data || data.length < 2) return [];
-        
-        const headers = data[0].map(cell => (cell === undefined || cell === null) ? "" : String(cell).trim());
-        const rows = data.slice(1);
-        
-        let nniIdx = -1, rimIdx = -1, niveauIdx = -1, nomIdx = -1;
-        let prenomIdx = -1, patronymeIdx = -1;
-        
-        headers.forEach((h, i) => {
-            let hUpper = String(h).toUpperCase().replace(/\s/g, '');
-            if (hUpper === 'NNI') nniIdx = i;
-            if (hUpper === 'RIM') rimIdx = i;
-            if (hUpper === 'NIVEAU') niveauIdx = i;
-            if (hUpper === 'NOM_FR') nomIdx = i;
-            if (hUpper === 'PRENOM_FR') prenomIdx = i;
-            if (hUpper === 'PATRONYME_FR') patronymeIdx = i;
-        });
-        
-        let records = [];
-        for (let row of rows) {
-            if (!row || row.length === 0) continue;
-            
-            let nni = (nniIdx !== -1 && row[nniIdx] !== undefined && row[nniIdx] !== null && String(row[nniIdx]).trim() !== "") 
-                ? String(row[nniIdx]).trim() : "";
-            let rim = (rimIdx !== -1 && row[rimIdx] !== undefined && row[rimIdx] !== null && String(row[rimIdx]).trim() !== "") 
-                ? String(row[rimIdx]).trim() : "";
-            let niveau = (niveauIdx !== -1 && row[niveauIdx] !== undefined && row[niveauIdx] !== null && String(row[niveauIdx]).trim() !== "") 
-                ? String(row[niveauIdx]).trim() : "";
-            
-            let nom = "";
-            if (nomIdx !== -1 && row[nomIdx] !== undefined && row[nomIdx] !== null && String(row[nomIdx]).trim() !== "") {
-                nom = String(row[nomIdx]).trim();
-            }
-            else if (prenomIdx !== -1 && patronymeIdx !== -1) {
-                let pre = (row[prenomIdx] !== undefined && row[prenomIdx] !== null) ? String(row[prenomIdx]).trim() : "";
-                let pat = (row[patronymeIdx] !== undefined && row[patronymeIdx] !== null) ? String(row[patronymeIdx]).trim() : "";
-                if (pre || pat) nom = (pre + " " + pat).trim();
-            }
-            else if (prenomIdx !== -1) {
-                nom = (row[prenomIdx] !== undefined && row[prenomIdx] !== null) ? String(row[prenomIdx]).trim() : "";
-            }
-            
-            if (nni === "" && rim === "" && nom === "") continue;
-            
-            records.push({ nni, rim, niveau, nom });
-        }
-        
-        if (records.length === 0) {
-            return extractRecordsFromSheetSmart(worksheet);
-        }
-        return records;
-    }
-
-    async function loadMinistryFile(file) {
+    // ------------------ loaders ------------------
+    async function loadFile(file, isMinistry = true) {
         return new Promise((resolve, reject) => {
-            if (!file) { resolve([]); return; }
             const reader = new FileReader();
             reader.onload = function(e) {
                 const data = new Uint8Array(e.target.result);
-                const workbook = XLSX.read(data, { type: 'array', cellDates: false, defval: "" });
-                const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
-                const records = extractMinistryRecords(firstSheet);
-                resolve(records);
+                try {
+                    const workbook = XLSX.read(data, { type: 'array', defval: "" });
+                    const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+                    let records = [];
+                    if (isMinistry) {
+                        records = extractMinistryData(firstSheet);
+                    } else {
+                        records = extractAjyalGeneric(firstSheet);
+                    }
+                    resolve(records);
+                } catch(err) {
+                    reject(err);
+                }
             };
             reader.onerror = (err) => reject(err);
             reader.readAsArrayBuffer(file);
         });
     }
 
-    async function loadAjyalFile(file) {
-        return new Promise((resolve, reject) => {
-            if (!file) { resolve([]); return; }
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                const data = new Uint8Array(e.target.result);
-                const workbook = XLSX.read(data, { type: 'array', cellDates: false, defval: "" });
-                const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
-                const records = extractRecordsFromSheetSmart(firstSheet);
-                resolve(records);
-            };
-            reader.onerror = (err) => reject(err);
-            reader.readAsArrayBuffer(file);
-        });
-    }
-
-    async function loadMultipleAjyalFiles(files) {
-        if (!files || files.length === 0) return [];
+    async function loadMultipleAjyal(files) {
         let allRecords = [];
         let fileNames = [];
         for (let file of files) {
             try {
-                const records = await loadAjyalFile(file);
-                allRecords = allRecords.concat(records);
+                const rec = await loadFile(file, false);
+                allRecords = allRecords.concat(rec);
                 fileNames.push(file.name);
-            } catch(err) {
-                console.error(`Error loading ${file.name}:`, err);
+            } catch(e) {
+                console.warn(`Error reading ${file.name}:`, e);
             }
         }
-        const listDiv = document.getElementById('ajyalFileList');
-        if (fileNames.length > 0) {
-            let html = '<div style="font-weight:500; margin-bottom:6px;">📁 الملفات المرفوعة:</div>';
-            fileNames.forEach(f => { html += `<span>${escapeHtml(f)}</span>`; });
-            listDiv.innerHTML = html;
+        const fileListDiv = document.getElementById('ajyalFileList');
+        if (fileNames.length) {
+            fileListDiv.innerHTML = fileNames.map(name => `<span class="file-tag">📄 ${escapeHtml(name)}</span>`).join('');
         } else {
-            listDiv.innerHTML = '';
+            fileListDiv.innerHTML = '';
         }
         return allRecords;
     }
 
-    // Match ministry records against Ajyal records
+    // ------------- perform matching (based on NNI or RIM) --------------
     function performMatching() {
-        if (!ministryData.length || !ajyalData.length) {
-            alert("⚠️ من فضلك قم برفع ملف الوزارة وملف(ات) أجيال قبل المطابقة.");
+        if (!ministryRecords.length || !ajyalRecords.length) {
+            alert("⚠️ يرجى رفع ملف الوزارة وملف(ات) أجيال أولاً.");
             return [];
         }
+
+        // Build lookup maps for Ajyal (normalized)
+        let nniMap = new Map();   // normalized NNI -> count and sample record
+        let rimMap = new Map();
         
-        // Create lookup maps for Ajyal data
-        let ajyalNniMap = new Map();
-        let ajyalRimMap = new Map();
-        
-        for (let a of ajyalData) {
+        for (let a of ajyalRecords) {
             if (a.nni) {
-                let normalized = normalizeStr(a.nni);
-                if (!ajyalNniMap.has(normalized)) ajyalNniMap.set(normalized, []);
-                ajyalNniMap.get(normalized).push(a);
+                let key = normalizeKey(a.nni);
+                if (!nniMap.has(key)) nniMap.set(key, []);
+                nniMap.get(key).push(a);
             }
             if (a.rim) {
-                let normalized = normalizeStr(a.rim);
-                if (!ajyalRimMap.has(normalized)) ajyalRimMap.set(normalized, []);
-                ajyalRimMap.get(normalized).push(a);
+                let key = normalizeKey(a.rim);
+                if (!rimMap.has(key)) rimMap.set(key, []);
+                rimMap.get(key).push(a);
             }
         }
-        
+
         let results = [];
-        
-        // Loop through each ministry record
-        for (let m of ministryData) {
+        for (let m of ministryRecords) {
             let found = false;
             let matchCount = 0;
             let matchedBy = [];
-            
-            // Check by NNI
+
             if (m.nni) {
-                let normalizedNni = normalizeStr(m.nni);
-                if (ajyalNniMap.has(normalizedNni)) {
+                let nniNorm = normalizeKey(m.nni);
+                if (nniMap.has(nniNorm)) {
                     found = true;
-                    matchCount += ajyalNniMap.get(normalizedNni).length;
+                    matchCount += nniMap.get(nniNorm).length;
                     matchedBy.push("NNI");
                 }
             }
-            
-            // Check by RIM (if not already found by NNI, but still count)
+
             if (m.rim) {
-                let normalizedRim = normalizeStr(m.rim);
-                if (ajyalRimMap.has(normalizedRim)) {
+                let rimNorm = normalizeKey(m.rim);
+                if (rimMap.has(rimNorm)) {
                     found = true;
-                    matchCount += ajyalRimMap.get(normalizedRim).length;
+                    matchCount += rimMap.get(rimNorm).length;
                     matchedBy.push("RIM");
                 }
             }
-            
-            // Only add to results if a match was found
+
             if (found) {
                 results.push({
-                    nni: m.nni || '',
-                    rim: m.rim || '',
-                    nom: m.nom || '',
-                    niveau: m.niveau || '',
+                    nni: m.nni || "",
+                    rim: m.rim || "",
+                    nom: m.nom || "",
+                    niveau: m.niveau || "",
                     matchCount: matchCount,
-                    matchedBy: matchedBy.join(' + ')
+                    matchedBy: matchedBy.join(" + ")
                 });
             }
         }
-        
-        // Sort by matchCount descending
-        results.sort((a, b) => b.matchCount - a.matchCount);
+        // sort by matchCount descending
+        results.sort((a,b) => b.matchCount - a.matchCount);
         return results;
     }
 
-    function renderResultsTable(results) {
-        const container = document.getElementById('resultsTableContainer');
-        if (!results.length) {
-            container.innerHTML = '<div class="empty-msg">🔍 لا توجد نتائج مطابقة. تأكد من رفع الملفين.</div>';
+    // --------------- render results --------------
+    function renderResults(resultsArray) {
+        const container = document.getElementById('resultsContainer');
+        if (!resultsArray.length) {
+            container.innerHTML = `<div class="empty-msg">🔍 لا توجد نتائج مطابقة. تأكد من رفع الملفين ووجود سجلات مشتركة.</div>`;
             return;
         }
-        
-        let html = `<div class="search-stats">📊 تم العثور على <strong style="color:#16a34a;">${results.length} سجل</strong> من الوزارة مسجلين في قوائم أجيال</div>`;
-        html += `<table><thead><tr>
-            <th>NNI</th><th>RIM</th><th>الاسم الكامل (Nom)</th><th>المستوى (Niveau)</th><th>عدد مرات التطابق</th><th>تم التطابق عبر</th>
-        </tr></thead><tbody>`;
-        
-        for (let rec of results) {
+        let html = `<div style="background:#eef3fa; padding:8px 16px; border-radius: 40px; margin: 12px 18px 0 18px;">
+                        📊 تم العثور على <strong style="color:#1a7b6e;">${resultsArray.length} سجل</strong> من الوزارة مسجلين في قوائم أجيال
+                    </div>`;
+        html += `<table><thead>
+                    <th>NNI</th><th>RIM</th><th>الاسم الكامل (Nom)</th><th>المستوى / الشعبة</th><th>عدد التطابقات</th><th>تم التطابق عبر</th>
+                 </thead><tbody>`;
+        for (let r of resultsArray) {
             html += `<tr>
-                <td>${escapeHtml(rec.nni)}</td>
-                <td>${escapeHtml(rec.rim)}</td>
-                <td>${escapeHtml(rec.nom)}</td>
-                <td>${escapeHtml(rec.niveau)}</td>
-                <td style="text-align:center"><span class="match-count">${rec.matchCount}</span></td>
-                <td>${escapeHtml(rec.matchedBy)}</td>
-            </tr>`;
+                        <td>${escapeHtml(r.nni)}</td>
+                        <td>${escapeHtml(r.rim)}</td>
+                        <td>${escapeHtml(r.nom)}</td>
+                        <td>${escapeHtml(r.niveau)}</td>
+                        <td style="text-align:center"><span class="match-highlight">${r.matchCount}</span></td>
+                        <td>${escapeHtml(r.matchedBy)}</td>
+                     </tr>`;
         }
-        html += `</tbody></table>`;
+        html += `</tbody></td>`;
         container.innerHTML = html;
     }
 
     function escapeHtml(str) {
-        if (!str || str === '') return '—';
+        if (str === undefined || str === null) return "—";
         return String(str).replace(/[&<>]/g, function(m) {
             if (m === '&') return '&amp;';
             if (m === '<') return '&lt;';
@@ -559,112 +537,111 @@
         });
     }
 
-    function exportToExcel(results) {
-        if (!results.length) {
-            alert("لا توجد نتائج للتصدير");
+    // --------------- export to excel ---------------
+    function exportResultsToExcel(resultsArray) {
+        if (!resultsArray.length) {
+            alert("لا توجد نتائج لتصديرها");
             return;
         }
-        const exportData = results.map(r => ({
-            "NNI": r.nni || '',
-            "RIM": r.rim || '',
-            "Nom complet": r.nom || '',
-            "Niveau": r.niveau || '',
+        const exportData = resultsArray.map(r => ({
+            "NNI": r.nni,
+            "RIM": r.rim,
+            "Nom complet": r.nom,
+            "Niveau": r.niveau,
             "Nombre de correspondances": r.matchCount,
             "Correspondances via": r.matchedBy
         }));
         const ws = XLSX.utils.json_to_sheet(exportData);
         const wb = XLSX.utils.book_new();
-        XLSX.utils.book_append_sheet(wb, ws, "Matched_Results");
-        XLSX.writeFile(wb, `matched_students_${new Date().toISOString().slice(0,19)}.xlsx`);
+        XLSX.utils.book_append_sheet(wb, ws, "Matched_Ministry_Ajyal");
+        XLSX.writeFile(wb, `matched_ministry_ajyal_${new Date().toISOString().slice(0,19)}.xlsx`);
     }
 
+    // ----------------- UI updates -----------------
     function updateCounters() {
-        document.getElementById('ministryCount').innerText = ministryData.length;
-        document.getElementById('ajyalCount').innerText = ajyalData.length;
+        document.getElementById('ministryCount').innerText = ministryRecords.length;
+        document.getElementById('ajyalCount').innerText = ajyalRecords.length;
+    }
+
+    async function onMinistryFileChange(e) {
+        const file = e.target.files[0];
+        if (!file) return;
+        document.getElementById('ministryStatus').innerHTML = "⏳ جاري تحميل ملف الوزارة ...";
+        try {
+            const data = await loadFile(file, true);
+            ministryRecords = data;
+            document.getElementById('ministryStatus').innerHTML = `✅ تم تحميل ${ministryRecords.length} سجل من الوزارة`;
+            updateCounters();
+            matchedResults = [];
+            renderResults([]);
+        } catch (err) {
+            console.error(err);
+            document.getElementById('ministryStatus').innerHTML = "❌ خطأ في قراءة ملف الوزارة";
+            ministryRecords = [];
+            updateCounters();
+            renderResults([]);
+        }
+    }
+
+    async function onAjyalFilesChange(e) {
+        const files = e.target.files;
+        if (!files || files.length === 0) return;
+        document.getElementById('ajyalStatus').innerHTML = `⏳ جاري تحميل ${files.length} ملف(ات) أجيال ...`;
+        try {
+            const all = await loadMultipleAjyal(files);
+            ajyalRecords = all;
+            document.getElementById('ajyalStatus').innerHTML = `✅ تم تحميل ${ajyalRecords.length} سجل من ملفات أجيال`;
+            updateCounters();
+            matchedResults = [];
+            renderResults([]);
+        } catch (err) {
+            console.error(err);
+            document.getElementById('ajyalStatus').innerHTML = "❌ فشل في قراءة ملفات أجيال";
+            ajyalRecords = [];
+            updateCounters();
+            renderResults([]);
+        }
     }
 
     function clearMinistry() {
-        ministryData = [];
-        matchResults = [];
-        document.getElementById('ministryStatus').innerHTML = '🗑️ تم تفريغ بيانات الوزارة';
+        ministryRecords = [];
+        matchedResults = [];
         document.getElementById('ministryFile').value = '';
+        document.getElementById('ministryStatus').innerHTML = "🗑️ تم تفريغ بيانات الوزارة";
         updateCounters();
-        renderResultsTable([]);
+        renderResults([]);
     }
 
     function clearAjyal() {
-        ajyalData = [];
-        matchResults = [];
-        document.getElementById('ajyalStatus').innerHTML = '🗑️ تم تفريغ جميع ملفات أجيال';
-        document.getElementById('ajyalFile').value = '';
+        ajyalRecords = [];
+        matchedResults = [];
+        document.getElementById('ajyalFilesInput').value = '';
+        document.getElementById('ajyalStatus').innerHTML = "🗑️ تم تفريغ جميع ملفات أجيال";
         document.getElementById('ajyalFileList').innerHTML = '';
         updateCounters();
-        renderResultsTable([]);
+        renderResults([]);
     }
 
-    // Event Listeners
-    document.getElementById('ministryFile').addEventListener('change', async (e) => {
-        const file = e.target.files[0];
-        if (!file) return;
-        document.getElementById('ministryStatus').innerHTML = '⏳ جاري تحميل ملف الوزارة...';
-        try {
-            const records = await loadMinistryFile(file);
-            ministryData = records;
-            document.getElementById('ministryStatus').innerHTML = `✅ تم تحميل ${ministryData.length} سجل من الوزارة`;
-            updateCounters();
-            renderResultsTable([]);
-        } catch(err) {
-            console.error(err);
-            document.getElementById('ministryStatus').innerHTML = '❌ خطأ في قراءة الملف';
-            ministryData = [];
-            updateCounters();
-        }
-    });
-
-    document.getElementById('ajyalFile').addEventListener('change', async (e) => {
-        const files = e.target.files;
-        if (!files || files.length === 0) return;
-        document.getElementById('ajyalStatus').innerHTML = `⏳ جاري تحميل ${files.length} ملف(ات) أجيال...`;
-        try {
-            const records = await loadMultipleAjyalFiles(files);
-            ajyalData = records;
-            document.getElementById('ajyalStatus').innerHTML = `✅ تم تحميل ${ajyalData.length} طالب مسجل من ${files.length} ملف`;
-            updateCounters();
-            renderResultsTable([]);
-        } catch(err) {
-            console.error(err);
-            document.getElementById('ajyalStatus').innerHTML = '❌ فشل قراءة بعض الملفات';
-            ajyalData = [];
-            updateCounters();
-        }
-    });
-
-    document.getElementById('runSearchBtn').addEventListener('click', () => {
-        if (ministryData.length === 0) {
-            alert("الرجاء رفع ملف الوزارة أولاً");
-            return;
-        }
-        if (ajyalData.length === 0) {
-            alert("الرجاء رفع ملف(ات) أجيال المستقبل أولاً");
-            return;
-        }
-        const results = performMatching();
-        matchResults = results;
-        renderResultsTable(matchResults);
-    });
-
-    document.getElementById('exportBtn').addEventListener('click', () => {
-        if (!matchResults.length) {
-            alert("لا توجد نتائج للتصدير. قم بإجراء المطابقة أولاً.");
-            return;
-        }
-        exportToExcel(matchResults);
-    });
-
+    // -------- event binding --------
+    document.getElementById('ministryFile').addEventListener('change', onMinistryFileChange);
+    document.getElementById('ajyalFilesInput').addEventListener('change', onAjyalFilesChange);
     document.getElementById('clearMinistryBtn').addEventListener('click', clearMinistry);
     document.getElementById('clearAjyalBtn').addEventListener('click', clearAjyal);
-
+    document.getElementById('runMatchBtn').addEventListener('click', () => {
+        const results = performMatching();
+        matchedResults = results;
+        renderResults(matchedResults);
+    });
+    document.getElementById('exportMatchBtn').addEventListener('click', () => {
+        if (!matchedResults.length) {
+            alert("لا توجد نتائج مطابقة. قم أولاً بإجراء المطابقة.");
+            return;
+        }
+        exportResultsToExcel(matchedResults);
+    });
+    
     updateCounters();
+    renderResults([]);
 </script>
 </body>
 </html>
