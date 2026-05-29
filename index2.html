@@ -1,0 +1,479 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>منظومة تنظيف بيانات الطلاب | توحيد الأعمدة NNI - RIM - NOM - NIVEAU - ETABLISSEMENT</title>
+    <!-- SheetJS for robust Excel parsing & writing -->
+    <script src="https://cdn.sheetjs.com/xlsx-0.20.2/package/dist/xlsx.full.min.js"></script>
+    <style>
+        * {
+            box-sizing: border-box;
+            font-family: 'Segoe UI', 'Tajawal', 'Cairo', system-ui, sans-serif;
+        }
+        body {
+            background: #f4f7fc;
+            margin: 0;
+            padding: 24px 20px;
+            direction: rtl;
+        }
+        .container {
+            max-width: 1300px;
+            margin: 0 auto;
+        }
+        /* header */
+        .hero {
+            margin-bottom: 28px;
+        }
+        .hero h1 {
+            font-size: 1.9rem;
+            color: #0a2f44;
+            border-right: 6px solid #1e88e5;
+            padding-right: 18px;
+            margin: 0 0 8px 0;
+        }
+        .hero p {
+            color: #2c3e50;
+            margin-top: 8px;
+            font-size: 0.9rem;
+        }
+        /* card upload */
+        .upload-area {
+            background: white;
+            border-radius: 32px;
+            padding: 20px 28px;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.05);
+            margin-bottom: 30px;
+            border: 1px solid #e0edf5;
+        }
+        .flex-upload {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 25px;
+            align-items: flex-end;
+        }
+        .file-card {
+            flex: 1;
+            min-width: 240px;
+        }
+        .file-card label {
+            font-weight: 600;
+            display: block;
+            margin-bottom: 8px;
+            color: #1e4663;
+        }
+        input[type="file"] {
+            width: 100%;
+            padding: 8px 0;
+            border: 1px solid #cbd5e1;
+            border-radius: 40px;
+            background: #fefefe;
+        }
+        .status-msg {
+            font-size: 0.8rem;
+            margin-top: 10px;
+            padding: 6px 12px;
+            border-radius: 60px;
+            background: #eef2f5;
+            color: #2c3e50;
+        }
+        .btn {
+            background: #1e6f5c;
+            border: none;
+            padding: 8px 22px;
+            border-radius: 40px;
+            color: white;
+            font-weight: 500;
+            cursor: pointer;
+            transition: 0.15s;
+            font-size: 0.85rem;
+            margin-top: 20px;
+        }
+        .btn-primary {
+            background: #0f4c5f;
+        }
+        .btn-primary:hover {
+            background: #0a3a48;
+            transform: scale(0.97);
+        }
+        .btn-success {
+            background: #2c7a4d;
+        }
+        .btn-success:hover {
+            background: #1e5f3a;
+        }
+        .btn-outline {
+            background: #e9ecef;
+            color: #1e4663;
+            border: 1px solid #b9d0e0;
+        }
+        .action-bar {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            justify-content: space-between;
+            align-items: center;
+            margin: 25px 0 20px;
+        }
+        .stats {
+            background: #e6f0f9;
+            border-radius: 48px;
+            padding: 6px 18px;
+            font-weight: 500;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
+            border-radius: 24px;
+            overflow: hidden;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        }
+        th {
+            background: #1f4e6e;
+            color: white;
+            padding: 12px 10px;
+            font-weight: 600;
+            font-size: 0.85rem;
+            white-space: nowrap;
+        }
+        td {
+            padding: 10px 8px;
+            border-bottom: 1px solid #e2edf2;
+            font-size: 0.8rem;
+        }
+        .preview-section {
+            background: white;
+            border-radius: 28px;
+            overflow-x: auto;
+            margin-top: 20px;
+            padding: 4px 0;
+        }
+        .empty-preview {
+            padding: 35px;
+            text-align: center;
+            color: #6b8e9e;
+        }
+        footer {
+            text-align: center;
+            font-size: 0.7rem;
+            margin-top: 35px;
+            color: #5f7f92;
+        }
+        .warning-badge {
+            background: #ffecb3;
+            border-radius: 24px;
+            padding: 2px 8px;
+            font-size: 0.7rem;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="hero">
+        <h1>🧹 منظومة تنظيف و توحيد ملفات الطلاب</h1>
+        <p>رفع أي ملف إكسل (ministry, ajyal, تقارير مختلفة) ➜ استخراج الأعمدة الأساسية: <strong>NNI - RIM - NOM - NIVEAU - ETABLISSEMENT</strong><br>
+        إذا كان الملف لا يحتوي عمود ETABLISSEMENT، سيتم إضافته تلقائياً مع اسم المؤسسة التي تختارها (افتراضي: Ajyal El Moustaghbal). يمكنك تغيير الاسم قبل التصدير.</p>
+    </div>
+
+    <div class="upload-area">
+        <div class="flex-upload">
+            <div class="file-card">
+                <label>📂 رفع ملف إكسل (XLSX / XLS)</label>
+                <input type="file" id="excelUpload" accept=".xlsx, .xls, .csv">
+                <div id="uploadStatus" class="status-msg">⚡ لم يتم رفع ملف بعد</div>
+            </div>
+            <div class="file-card">
+                <label>🏫 اسم المؤسسة (لإضافتها كعمود جديد)</label>
+                <input type="text" id="etabName" value="Ajyal El Moustaghbal" placeholder="Ajyal El Moustaghbal" style="width:100%; padding:8px 12px; border-radius: 40px; border:1px solid #ccc;">
+                <div style="font-size:0.7rem; margin-top:6px;">✏️ سيتم وضع هذا الاسم في عمود ETABLISSEMENT إذا كان مفقوداً</div>
+            </div>
+        </div>
+        <div style="margin-top: 20px;">
+            <button id="processCleanBtn" class="btn btn-primary">🔄 تنظيف البيانات واستخراج الأعمدة</button>
+            <button id="exportCleanBtn" class="btn btn-success" style="margin-right: 12px;">📎 تصدير الملف النظيف (Excel)</button>
+            <button id="resetBtn" class="btn btn-outline">🗑️ إعادة تعيين</button>
+        </div>
+    </div>
+
+    <div class="action-bar">
+        <div class="stats" id="statsDisplay">📊 السجلات المستخرجة: 0</div>
+        <div><span class="warning-badge">⚠️ يتم إعادة تسمية الأعمدة تلقائياً: NNI, RIM, NOM, NIVEAU, ETABLISSEMENT</span></div>
+    </div>
+
+    <div class="preview-section">
+        <div style="padding: 12px 20px 0 20px; font-weight: 600;">📋 معاينة البيانات النظيفة (أول 100 صف)</div>
+        <div id="cleanPreviewContainer">
+            <div class="empty-preview">✨ انتظر رفع ملف ثم الضغط على "تنظيف البيانات"</div>
+        </div>
+    </div>
+    <footer>الخوارزمية تبحث عن الأعمدة المشابهة (NNI, RIM, NOM, NIVEAU) حتى لو كانت مسميات مختلفة بالعربية أو الفرنسية. يتم إنشاء عمود ETABLISSEMENT إذا كان غير موجود، ويمكنك تعديل قيمته قبل التصدير.</footer>
+</div>
+
+<script>
+    // --------------------- GLOBAL STATE -------------------------
+    let rawWorkbook = null;           // store original workbook object (to preserve data)
+    let cleanedRows = [];             // array of objects { NNI, RIM, NOM, NIVEAU, ETABLISSEMENT }
+    let originalSheetName = "";
+    
+    // Helper: normalize string for matching column names
+    function normalizeCol(str) {
+        if (str === undefined || str === null) return "";
+        return String(str).trim().toLowerCase().replace(/[\s_\-]/g, '').normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+    }
+    
+    // detect column index based on multiple possible names (french/arabic/english)
+    function detectColumnIndex(headers, possibleNames) {
+        for (let i = 0; i < headers.length; i++) {
+            let cellVal = headers[i] !== undefined ? String(headers[i]).trim() : "";
+            let normCell = normalizeCol(cellVal);
+            for (let p of possibleNames) {
+                let normPattern = normalizeCol(p);
+                if (normCell === normPattern) return i;
+                // also contains keyword? but prefer exact after normalization
+                if (normCell.includes(normPattern) && normPattern.length > 2) return i;
+            }
+        }
+        return -1;
+    }
+    
+    // smart extraction from any sheet (array of arrays)
+    function extractCleanedDataFromSheet(worksheet, defaultEtabName) {
+        let data = XLSX.utils.sheet_to_json(worksheet, { header: 1, defval: "" });
+        if (!data || data.length < 2) return [];
+        
+        const headers = data[0].map(cell => (cell === undefined || cell === null) ? "" : String(cell).trim());
+        const rows = data.slice(1);
+        
+        // --- keyword lists for each target column ---
+        const nniKeywords = ["nni", "رقم الوطني", "national_id", "الرقم الوطني", "nniالطالب"];
+        const rimKeywords = ["rim", "رقم التعريف", "الرقم المدرسي", "id scolaire", "matricule", "rimالطالب"];
+        const nomKeywords = ["nom", "الاسم", "الاسم الكامل", "fullname", "prenom et nom", "studentname", "الإسم بالفرنسية", "الاسم بالفرنسية", "nom_fr", "prenom_nom"];
+        const niveauKeywords = ["niveau", "المستوى", "level", "grade", "class", "الشعبة", "الصف", "classe"];
+        
+        // detect indexes
+        let nniIdx = detectColumnIndex(headers, nniKeywords);
+        let rimIdx = detectColumnIndex(headers, rimKeywords);
+        let nomIdx = detectColumnIndex(headers, nomKeywords);
+        let niveauIdx = detectColumnIndex(headers, niveauKeywords);
+        
+        // fallback: if nom not found, try to combine PRENOM + NOM columns if exist (French often)
+        let prenomIdx = -1, patronymeIdx = -1, nomArIdx = -1;
+        if (nomIdx === -1) {
+            for (let i=0; i<headers.length; i++) {
+                let h = normalizeCol(headers[i]);
+                if (h.includes("prenom") || h === "firstname" || h.includes("الاسم")) prenomIdx = i;
+                if (h.includes("patronyme") || h.includes("nomdefamille") || h.includes("lastname") || h.includes("الكنية")) patronymeIdx = i;
+                if (h.includes("الاسمبالعربية") || h === "الاسم_بالعربية") nomArIdx = i;
+            }
+        }
+        
+        let records = [];
+        for (let row of rows) {
+            if (!row || row.length === 0) continue;
+            // extract values
+            let nni = (nniIdx !== -1 && row[nniIdx] !== undefined && row[nniIdx] !== "") ? String(row[nniIdx]).trim() : "";
+            let rim = (rimIdx !== -1 && row[rimIdx] !== undefined && row[rimIdx] !== "") ? String(row[rimIdx]).trim() : "";
+            let niveau = (niveauIdx !== -1 && row[niveauIdx] !== undefined && row[niveauIdx] !== "") ? String(row[niveauIdx]).trim() : "";
+            let nom = "";
+            if (nomIdx !== -1 && row[nomIdx] !== undefined && row[nomIdx] !== "") {
+                nom = String(row[nomIdx]).trim();
+            } 
+            // try to combine prenom + patronyme if nom missing and we have both
+            else if (prenomIdx !== -1 && patronymeIdx !== -1) {
+                let pre = (row[prenomIdx] !== undefined && row[prenomIdx] !== "") ? String(row[prenomIdx]).trim() : "";
+                let pat = (row[patronymeIdx] !== undefined && row[patronymeIdx] !== "") ? String(row[patronymeIdx]).trim() : "";
+                if (pre || pat) nom = (pre + " " + pat).trim();
+            } 
+            else if (prenomIdx !== -1) {
+                nom = (row[prenomIdx] !== undefined) ? String(row[prenomIdx]).trim() : "";
+            }
+            else if (nomArIdx !== -1) {
+                nom = (row[nomArIdx] !== undefined) ? String(row[nomArIdx]).trim() : "";
+            }
+            
+            // skip completely empty rows (no useful identifiers)
+            if (nni === "" && rim === "" && nom === "") continue;
+            
+            // assign ETABLISSEMENT: if file already has column named 'ETABLISSEMENT' or similar? we check header for etablissement keyword
+            let etabValue = defaultEtabName;
+            let etabIdx = detectColumnIndex(headers, ["etablissement", "établissement", "مؤسسة", "school", "المدرسة", "academy"]);
+            if (etabIdx !== -1 && row[etabIdx] !== undefined && String(row[etabIdx]).trim() !== "") {
+                etabValue = String(row[etabIdx]).trim();
+            }
+            
+            records.push({
+                NNI: nni,
+                RIM: rim,
+                NOM: nom,
+                NIVEAU: niveau,
+                ETABLISSEMENT: etabValue
+            });
+        }
+        return records;
+    }
+    
+    // load workbook from file
+    function loadWorkbook(file) {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const data = new Uint8Array(e.target.result);
+                try {
+                    const workbook = XLSX.read(data, { type: 'array', cellDates: false, defval: "" });
+                    resolve(workbook);
+                } catch(err) {
+                    reject(err);
+                }
+            };
+            reader.onerror = (err) => reject(err);
+            reader.readAsArrayBuffer(file);
+        });
+    }
+    
+    // core cleaning function using current uploaded file and etab name
+    async function processCleaning(file, etabName) {
+        if (!file) throw new Error("لم يتم اختيار ملف");
+        const workbook = await loadWorkbook(file);
+        rawWorkbook = workbook;
+        const firstSheetName = workbook.SheetNames[0];
+        originalSheetName = firstSheetName;
+        const worksheet = workbook.Sheets[firstSheetName];
+        const cleanedArray = extractCleanedDataFromSheet(worksheet, etabName);
+        return cleanedArray;
+    }
+    
+    // render preview table (first 100 rows)
+    function renderPreview(rowsArray) {
+        const container = document.getElementById('cleanPreviewContainer');
+        if (!rowsArray || rowsArray.length === 0) {
+            container.innerHTML = '<div class="empty-preview">📭 لا توجد بيانات بعد التنظيف. تأكد من أن الملف يحتوي على أعمدة صالحة (NNI, RIM, اسم الطالب...)</div>';
+            document.getElementById('statsDisplay').innerHTML = `📊 السجلات المستخرجة: 0`;
+            return;
+        }
+        document.getElementById('statsDisplay').innerHTML = `📊 السجلات المستخرجة: ${rowsArray.length}`;
+        const displayRows = rowsArray.slice(0, 100);
+        let html = `<table>
+            <thead>
+                <tr><th>NNI</th><th>RIM</th><th>NOM</th><th>NIVEAU</th><th>ETABLISSEMENT</th></tr>
+            </thead><tbody>`;
+        for (let row of displayRows) {
+            html += `<tr>
+                        <td>${escapeHtml(row.NNI)}</td>
+                        <td>${escapeHtml(row.RIM)}</td>
+                        <td>${escapeHtml(row.NOM)}</td>
+                        <td>${escapeHtml(row.NIVEAU)}</td>
+                        <td>${escapeHtml(row.ETABLISSEMENT)}</td>
+                     </tr>`;
+        }
+        if (rowsArray.length > 100) {
+            html += `<tr><td colspan="5" style="text-align:center; background:#f9f9f9;">... و ${rowsArray.length - 100} صف إضافي (تم عرض أول 100 صف)</td></tr>`;
+        }
+        html += `</tbody></table>`;
+        container.innerHTML = html;
+    }
+    
+    function escapeHtml(str) {
+        if (str === undefined || str === null) return '—';
+        return String(str).replace(/[&<>]/g, function(m) {
+            if (m === '&') return '&amp;';
+            if (m === '<') return '&lt;';
+            if (m === '>') return '&gt;';
+            return m;
+        });
+    }
+    
+    // export cleaned data to excel (full dataset)
+    function exportCleanedToExcel(cleanedData, originalFilename) {
+        if (!cleanedData || cleanedData.length === 0) {
+            alert("لا توجد بيانات نظيفة للتصدير. قم بتحميل ملف وتنظيفه أولاً.");
+            return;
+        }
+        const exportSheet = XLSX.utils.json_to_sheet(cleanedData);
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, exportSheet, "Donnees_Nettoyees");
+        const fileName = `cleaned_students_${new Date().toISOString().slice(0,19)}.xlsx`;
+        XLSX.writeFile(wb, fileName);
+    }
+    
+    // ------------------- DOM Elements ------------------
+    const fileInput = document.getElementById('excelUpload');
+    const uploadStatusDiv = document.getElementById('uploadStatus');
+    const processBtn = document.getElementById('processCleanBtn');
+    const exportBtn = document.getElementById('exportCleanBtn');
+    const resetBtn = document.getElementById('resetBtn');
+    const etabInput = document.getElementById('etabName');
+    
+    let currentFile = null;
+    
+    fileInput.addEventListener('change', (e) => {
+        if (e.target.files && e.target.files.length > 0) {
+            currentFile = e.target.files[0];
+            uploadStatusDiv.innerHTML = `✅ تم اختيار الملف: ${currentFile.name} (${(currentFile.size/1024).toFixed(1)} KB) <br> اضغط "تنظيف البيانات" للمعالجة.`;
+            // reset preview and cleaned data
+            cleanedRows = [];
+            renderPreview([]);
+        } else {
+            currentFile = null;
+            uploadStatusDiv.innerHTML = `⚡ لم يتم رفع ملف بعد`;
+            cleanedRows = [];
+            renderPreview([]);
+        }
+    });
+    
+    processBtn.addEventListener('click', async () => {
+        if (!currentFile) {
+            alert("يرجى اختيار ملف Excel أولاً.");
+            return;
+        }
+        const customEtab = etabInput.value.trim();
+        const etabForProcess = customEtab !== "" ? customEtab : "Ajyal El Moustaghbal";
+        uploadStatusDiv.innerHTML = `⏳ جاري تحليل الملف واستخراج الأعمدة المطلوبة (NNI, RIM, NOM, NIVEAU, ETABLISSEMENT)...`;
+        try {
+            const result = await processCleaning(currentFile, etabForProcess);
+            cleanedRows = result;
+            renderPreview(cleanedRows);
+            uploadStatusDiv.innerHTML = `✅ اكتمل التنظيف! تم استخراج ${cleanedRows.length} سجل. يمكنك تعديل اسم المؤسسة وتصدير البيانات النظيفة.`;
+            // If user wants to update ETABLISSEMENT after cleaning? we allow re-run with new etab name.
+        } catch (err) {
+            console.error(err);
+            uploadStatusDiv.innerHTML = `❌ خطأ أثناء معالجة الملف: ${err.message}`;
+            cleanedRows = [];
+            renderPreview([]);
+        }
+    });
+    
+    exportBtn.addEventListener('click', () => {
+        if (!cleanedRows || cleanedRows.length === 0) {
+            alert("لا يوجد بيانات نظيفة. قم أولاً برفع ملف والضغط على 'تنظيف البيانات'.");
+            return;
+        }
+        // optional: if user changed the ETABLISSEMENT name in input, we can update all rows before export
+        const newEtabName = etabInput.value.trim();
+        if (newEtabName !== "") {
+            // we replace ETABLISSEMENT values with the new given name for all rows (coherent)
+            let modified = cleanedRows.map(row => ({
+                ...row,
+                ETABLISSEMENT: newEtabName
+            }));
+            exportCleanedToExcel(modified, currentFile?.name);
+        } else {
+            exportCleanedToExcel(cleanedRows, currentFile?.name);
+        }
+    });
+    
+    resetBtn.addEventListener('click', () => {
+        // full reset
+        currentFile = null;
+        fileInput.value = '';
+        cleanedRows = [];
+        renderPreview([]);
+        uploadStatusDiv.innerHTML = `⚡ تم إعادة التعيين، ارفع ملف جديد.`;
+        etabInput.value = "Ajyal El Moustaghbal";
+    });
+    
+    // initial empty state
+    renderPreview([]);
+</script>
+</body>
+</html>
